@@ -1,0 +1,61 @@
+target_directory: /srv/ftp-public/RAW-upload/VizDATA/RAW
+recursive_watch: no
+
+meta:
+  db_path: /opt/filewatcher/var/vizdatamon_meta.sqlite
+  duplicate_check_reserve_day: 3
+
+periodical-scan:
+  scan_interval: 1200
+  use_meta: True
+
+operator:
+  program_runner:
+    max_running_program: 8
+    # OR (notice: avoid conflict with default queue name "_DEFAULT")
+    queue:
+      - max_running_program: 3
+      - name: LOWPRI
+        max_running_program: 8
+      - name: HIGHPRI
+        max_running_program: 16
+
+
+watching_entries:
+  # Model-1
+  - file_regex: ^m1data[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{4}.txt$
+    duplicate_check: Yes
+    operation:
+      - copy_to: /storage/viz/data/realtime/m1data
+        run_program: /opt/vizapp/bin/parse-m1.pl
+      - move_to: /storage/v2simulator/data/working
+        run_program: /proj/v2sim/bin/sim-m1
+
+  # Model-M
+  - file_regex: ^mx[\d]{4}-[\d]{2}-[\d]{2}_[\d]{4}_m\.mdl$
+    path_regex: [a-z]+\/[0-9]{4}\/([0-9]{2})\/
+    process_as_uniqname: False
+    duplicate_check: Yes
+    operation:
+      - copy_to: /storage/viz/data/realtime/mmdata
+        run_program: /opt/vizapp/bin/parse-mm.pl
+      - move_to: /storage/v2simulator/data/working
+        run_program: /proj/v2sim/bin/sim-mm
+
+  # Variable mapping
+  - file_regex: ^[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{4}\.VariableTable_new\.txt$
+    duplicate_check: Yes
+    duplicate_content_check_label: YYYY-MM-DD_hhmm.VariableTable_new.txt
+    operation:
+      - move_to: /storage/v2dbcon/data/working
+        run_program: /proj/v2dbcon/bin/load-VariableMapping
+
+  # VizCode mapping
+  - file_regex: ^[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{4}\.viz\.table$
+    duplicate_check: Yes
+    duplicate_content_check_label: YYYY-MM-DD_hhmm.viz.table
+    operation:
+      - move_to: /storage/v2dbcon/data/working
+        run_program: /proj/v2dbcon/bin/load-VizCodeMapping
+
+
