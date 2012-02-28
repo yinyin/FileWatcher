@@ -1,2 +1,4 @@
+*.pyc
+
 etc/sample-aux.yaml
 
