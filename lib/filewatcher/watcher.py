@@ -26,6 +26,8 @@ class OperationExecRef:
 		self.filename_matchobj = filename_matchobj
 		self.pathname_matchobj = pathname_matchobj
 		self.digisig = digisig
+		
+		self.carry_variable = {}
 # ### class OperationExecRef
 
 
