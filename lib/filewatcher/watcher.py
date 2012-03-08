@@ -20,7 +20,7 @@ class OperationExecRef:
 		參數:
 			filename_matchobj - 檔名 regex 比對結果物件
 			pathname_matchobj - 路徑 regex 比對結果物件 (如果有設定路徑比對，否則為 None)
-			digisig - 數位簽章 (如果有設定內容重複檢查或是夾帶數位簽張，否則為 None)
+			digisig - 數位簽章 (如果有設定內容重複檢查或是夾帶數位簽章，否則為 None)
 		"""
 
 		self.filename_matchobj = filename_matchobj
