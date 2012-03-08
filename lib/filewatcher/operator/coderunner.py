@@ -13,6 +13,7 @@ from filewatcher import componentprop
 __runner_queue = {}
 
 __task_queue_assignment = re.compile("""^\(([A-Za-z0-9-]+)\)\s*([^\s].+)$""")
+__command_carry_variable_macro = re.compile("""^%(A-Za-z0-9_-]+)%$""")
 
 
 def __subprocess_worker(worker_qlabel, worker_id, q):
@@ -82,7 +83,7 @@ class __RunnerQueue:
 		self.workers = workers_q
 	# ### def start_workers
 
-	def run_program(self, cmdlist, filepath, logqueue):
+	def run_program(self, cmdlist, filepath, carry_variable, logqueue):
 		""" 執行指定的程式執行作業
 
 		參數:
@@ -99,10 +100,17 @@ class __RunnerQueue:
 		# {{{ build command
 		cmd = []
 		for v in cmdlist:
-			if """%FILENAME%""" == v:
-				cmd.append(filepath)
-			else:
+			m = __command_carry_variable_macro.match(v)
+			if m is None:
 				cmd.append(v)
+			else:
+				varname = m.group(1)
+				if """%FILENAME%""" == varname:	# resolve built-in macro: FILENAME
+					cmd.append(filepath)
+				elif varname in carry_variable:	# resolve macro from carry_variable
+					cmd.append(carry_variable[varname])
+				else:	# all the others, just output as one of arguments
+					cmd.append(v)
 		# }}} build command
 
 		if self.cmd_queue is None:
@@ -253,18 +261,13 @@ def perform_operation(current_filepath, orig_filename, argv, oprexec_ref, logque
 	回傳值:
 		經過操作後的檔案絕對路徑
 	"""
-
-	# TODO - use argument object
-	m = __task_queue_assignment.match(argv)
-	if m is None:
-		__runner_queue['_DEFAULT'].run_program(argv, current_filepath, logqueue)
-	else:
-		r_queue = m.group(1)
-		cmd_path = m.group(2)
-		if r_queue in __runner_queue:
-			__runner_queue[r_queue].run_program(cmd_path, current_filepath, logqueue)
-		else:
-			logqueue.append("queue not found: %r"%(r_queue,))
+	
+	r_queue = argv.queue
+	if r_queue not in __runner_queue:
+		logqueue.append("queue not found: %r"%(r_queue,))
+		r_queue = '_DEFAULT'
+	
+	__runner_queue[r_queue].run_program(argv.command, current_filepath, oprexec_ref.carry_variable, logqueue)
 
 	return current_filepath
 # ### def perform_operation
