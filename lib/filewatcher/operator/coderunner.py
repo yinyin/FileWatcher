@@ -10,13 +10,13 @@ import Queue
 from filewatcher import componentprop
 
 
-__runner_queue = {}
+_runner_queue = {}
 
-__task_queue_assignment = re.compile("""^\(([A-Za-z0-9-]+)\)\s*([^\s].+)$""")
-__command_carry_variable_macro = re.compile("""^%(A-Za-z0-9_-]+)%$""")
+_task_queue_assignment = re.compile("""^\(([A-Za-z0-9-]+)\)\s*([^\s].+)$""")
+_command_carry_variable_macro = re.compile("""^%(A-Za-z0-9_-]+)%$""")
 
 
-def __subprocess_worker(worker_qlabel, worker_id, q):
+def _subprocess_worker(worker_qlabel, worker_id, q):
 	running = True
 	while running:
 		try:
@@ -36,14 +36,14 @@ def __subprocess_worker(worker_qlabel, worker_id, q):
 			pass
 # ### def __subprocess_worker
 
-class __RunConfiguration:
+class _RunConfiguration:
 	def __init__(self, queue, command):
 		self.queue = queue
 		self.command = command
 	# ### __init__
 # ### class __RunConfiguration
 
-class __RunnerQueue:
+class _RunnerQueue:
 	""" 放置執行程式的 Runner/Worker 的佇列 """
 
 	def __init__(self, queue_label, max_running_process, max_running_second=None):
@@ -100,7 +100,7 @@ class __RunnerQueue:
 		# {{{ build command
 		cmd = []
 		for v in cmdlist:
-			m = __command_carry_variable_macro.match(v)
+			m = _command_carry_variable_macro.match(v)
 			if m is None:
 				cmd.append(v)
 			else:
@@ -188,12 +188,12 @@ def operator_configure(config):
 
 			if 'name' in qconfig:
 				qname = str(qconfig['name'])
-				__runner_queue[qname] = __RunnerQueue(qname, max_running_process)
+				_runner_queue[qname] = _RunnerQueue(qname, max_running_process)
 		# }}} scan over each queue configuration
 	# }}} use multiple queues
 
 	# setup default queue
-	__runner_queue['_DEFAULT'] = __RunnerQueue('_DEFAULT', default_max_running_process)
+	_runner_queue['_DEFAULT'] = _RunnerQueue('_DEFAULT', default_max_running_process)
 # ### def operator_configure
 
 
@@ -237,15 +237,15 @@ def read_operation_argv(argv):
 
 	# {{{ check if use queue short-cut -syntax (eg: (QUEUE) /path/to/cmd )
 	if isinstance(result_cmd, list):
-		m = __task_queue_assignment.match( result_cmd[0] )
+		m = _task_queue_assignment.match( result_cmd[0] )
 		if m is not None:
 			q = m.group(1)
 			result_cmd[0] = m.group(2)
-			if q in __runner_queue:
+			if q in _runner_queue:
 				que_argv = q
 	# }}} check if use queue short-cut -syntax
 
-	return __RunConfiguration(que_argv, cmd_argv)
+	return _RunConfiguration(que_argv, cmd_argv)
 # ### read_operation_argv
 
 
@@ -263,11 +263,11 @@ def perform_operation(current_filepath, orig_filename, argv, oprexec_ref, logque
 	"""
 	
 	r_queue = argv.queue
-	if r_queue not in __runner_queue:
+	if r_queue not in _runner_queue:
 		logqueue.append("queue not found: %r"%(r_queue,))
 		r_queue = '_DEFAULT'
 	
-	__runner_queue[r_queue].run_program(argv.command, current_filepath, oprexec_ref.carry_variable, logqueue)
+	_runner_queue[r_queue].run_program(argv.command, current_filepath, oprexec_ref.carry_variable, logqueue)
 
 	return current_filepath
 # ### def perform_operation
@@ -283,7 +283,7 @@ def operator_stop():
 	"""
 
 	syslog.syslog(syslog.LOG_NOTICE, "coderunner: stopping all Runner")
-	for runner in __runner_queue.itervalues():
+	for runner in _runner_queue.itervalues():
 		runner.stop_workers()
 	syslog.syslog(syslog.LOG_NOTICE, "coderunner: all Runner stopped")
 # ### def operator_stop
