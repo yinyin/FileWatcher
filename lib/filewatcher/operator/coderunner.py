@@ -87,8 +87,10 @@ class _RunnerQueue:
 		""" 執行指定的程式執行作業
 
 		參數:
-			progpath - 要執行程式的路徑
+			cmdlist - 要執行程式的路徑與參數
 			filepath - 作為參數的檔案檔名
+			carry_variable - 要引入的變數 dict
+			logqueue - 用作儲存紀錄的 list 物件
 		回傳值:
 			(無)
 		"""
