@@ -27,7 +27,7 @@ class OperationEntry:
 class MonitorEntry:
 	""" monitor configuration """
 
-	def __init__(self, file_regex, path_regex, do_dupcheck, operation, process_as_uniqname=True, content_check_label=None):
+	def __init__(self, file_regex, path_regex, do_dupcheck, operation, process_as_uniqname=True, content_check_label=None, ignorance_checker=None):
 		""" 建構子
 
 		參數:
@@ -37,6 +37,7 @@ class MonitorEntry:
 			operation - 存有作業設定的串列
 			process_as_uniqname - 是否使用唯一檔名進行後續作業 (需要目錄的 write 權限)
 			content_check_label - 是否在進行重複性比對作業時使用指定的字串來覆蓋掉檔名 (不同檔名視為同一筆檔案)
+			ignorance_checker - 檢查所找到的目錄或檔案是否要忽略
 		"""
 
 		self.file_regex = re.compile(file_regex)
@@ -49,6 +50,8 @@ class MonitorEntry:
 		if do_dupcheck:
 			self.do_dupcheck = True
 			self.content_check_label = content_check_label
+		
+		self.ignorance_checker = ignorance_checker
 	# ### __init__
 # ### class MonitorEntry
 
