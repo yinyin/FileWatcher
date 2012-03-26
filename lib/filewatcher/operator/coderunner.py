@@ -76,7 +76,7 @@ class _RunnerQueue:
 		workers_q = []
 		self.cmd_queue = Queue.Queue()
 		for idx in range(self.max_running_process):
-			wk = threading.Thread(target=__subprocess_worker, args=(self.queue_label, idx, self.cmd_queue,))
+			wk = threading.Thread(target=_subprocess_worker, args=(self.queue_label, idx, self.cmd_queue,))
 			wk.start()
 			workers_q.append(wk)
 			print "created worker named %r (ID=%d/Q=%r)" % (wk.name, idx, self.queue_label,)
