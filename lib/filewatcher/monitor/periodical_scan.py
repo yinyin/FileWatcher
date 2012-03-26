@@ -79,12 +79,15 @@ __wk_thread = None
 __wk_do_scan = False
 
 def __scan_worker(watcher_instance, target_directory, recursive_watch):
+	global __wk_do_scan
+
 	last_scan = 0
 	min_scan_interval = __scan_interval / 4
 
 	while __wk_do_scan:
 		perform_scan = False
 		current_tstamp = time.time()
+		tz_offset = metadatum.get_tzoffset()
 
 		# {{{ check if need do scan
 		if (current_tstamp - last_scan) > min_scan_interval:	# must > min_scan_interval to avoid over-scan
@@ -94,9 +97,18 @@ def __scan_worker(watcher_instance, target_directory, recursive_watch):
 			else:
 				if (current_tstamp - watcher_instance.last_file_event_tstamp) > __scan_interval:
 					perform_scan = True
+		
+		if perform_scan:
+			# {{{ see if in blackout time
+			local_tstamp = current_tstamp - tz_offset
+			for b in __blackout_time:
+				if b.isIn(local_tstamp):
+					perform_scan = False
+			# }}} see if in blackout time
 		# }}} check if need do scan
 
 		if perform_scan:
+			# TODO: do scan
 
 			current_tstamp = time.time()
 			last_scan = current_tstamp
@@ -123,9 +135,12 @@ def monitor_start(watcher_instance, target_directory, recursive_watch=False):
 		(無)
 	"""
 
-	global __wk_do_scan
+	global __wk_do_scan, __wk_thread
 
 	__wk_do_scan = True
+	
+	__wk_thread = threading.Thread(target=__scan_worker, args=(watcher_instance, target_directory, recursive_watch,))
+	__wk_thread.start()
 # ### def monitor_start
 
 
@@ -138,9 +153,10 @@ def monitor_stop():
 		(無)
 	"""
 
-	global __wk_do_scan
+	global __wk_do_scan, __wk_thread
 
 	__wk_do_scan = False
+	__wk_thread.join(__scan_interval*2+60)
 # ### def monitor_stop
 
 
