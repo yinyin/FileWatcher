@@ -26,20 +26,21 @@ def get_module_prop():
 
 __scan_interval = 1200
 __cron_interval_style = False
-__use_meta = False
 __blackout_time = []
 
+_metastorage = None
 
-def monitor_configure(config):
+def monitor_configure(config, metastorage):
 	""" 設定監視器組態
 
 	參數:
 		config - 帶有參數的字典
+		metastorage - 中介資訊資料庫物件
 	回傳值:
 		(無)
 	"""
 
-	global __scan_interval, __cron_interval_style, __use_meta, __blackout_time
+	global __scan_interval, __cron_interval_style, __blackout_time, _metastorage
 
 	# {{{ 掃描間隔
 	if 'scan_interval' in config:
@@ -56,8 +57,8 @@ def monitor_configure(config):
 	# }}} 掃描間隔
 
 	# 是否使用儲存紀錄到 MetaStorage 的比對方式
-	if ('use_meta' in config) and (config['use_meta']):
-		__use_meta = True
+	if ('use_meta' in config) and (config['use_meta']) and (metastorage is not None):
+		_metastorage = metastorage
 
 	# {{{ 將不掃描時間讀入
 	if ('blackout_time' in config) and (isinstance('blackout_time', list)):

@@ -19,11 +19,12 @@ def get_module_prop():
 # ### def get_module_prop
 
 
-def monitor_configure(config):
+def monitor_configure(config, metastorage):
 	""" 設定監視器組態
 
 	參數:
 		config - 帶有參數的字典
+		metastorage - 中介資訊資料庫物件
 	回傳值:
 		(無)
 	"""
