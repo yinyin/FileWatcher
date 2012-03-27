@@ -153,7 +153,7 @@ def monitor_stop():
 		(無)
 	"""
 
-	global __wk_do_scan, __wk_thread
+	global __wk_do_scan, __wk_thread, __scan_interval
 
 	__wk_do_scan = False
 	__wk_thread.join(__scan_interval*2+60)
