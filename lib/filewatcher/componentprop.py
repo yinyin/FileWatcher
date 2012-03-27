@@ -38,7 +38,7 @@ class MonitorProp(ModuleProp):
 class OperatorProp(ModuleProp):
 	""" 操作器工作模組屬性 """
 
-	def __init__(self, module_name, operation_name, schedule_priority=None, run_priority=None):
+	def __init__(self, module_name, operation_name, schedule_priority=None, run_priority=None, handle_dismiss=False):
 		""" 建構子
 
 		參數:
@@ -46,6 +46,7 @@ class OperatorProp(ModuleProp):
 			operation_name - 操作名稱
 			schedule_priority - 操作塊排程優先順序，數字小的先執行 (若操作不影響排程或是不受排程影響，則設定為 None)
 			run_priority - 執行優先順序，數字小的先執行
+			handle_dismiss - 處理檔案刪除移出事件
 		"""
 
 		ModuleProp.__init__(self, module_name, isOperator=True)
@@ -53,6 +54,7 @@ class OperatorProp(ModuleProp):
 		self.operation_name = operation_name
 		self.schedule_priority = schedule_priority
 		self.run_priority = run_priority
+		self.handle_dismiss = handle_dismiss
 	# ### def __init__
 # ### class OperatorProp
 
