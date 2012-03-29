@@ -5,6 +5,7 @@
 import time
 
 from filewatcher import componentprop
+from filewatcher import filewatchconfig
 
 
 def get_module_prop():
@@ -21,6 +22,20 @@ def get_module_prop():
 
 
 
+_ignorance_checker = None
+def set_ignorance_checker(checker):
+	""" 設定忽略路徑與檔案檢查器
+	
+	參數:
+		checker - 進行路徑與檔案名稱檢查的函式，函數原型: (dirlist[]=None, filename=None)
+	"""
+	global _ignorance_checker
+	
+	if isinstance(checker, str):
+		_ignorance_checker = filewatchconfig.lookup_ignorance_checker(checker)
+	else:
+		_ignorance_checker = checker
+# ### def set_ignorance_checker
 
 
 
@@ -73,6 +88,10 @@ def monitor_configure(config, metastorage):
 			except:
 				pass
 	# }}} 將不掃描時間讀入
+	
+	# 載入 ignorance checker
+	if 'ignorance-checker' in config:
+		set_ignorance_checker(str(config['ignorance-checker']))
 # ### def monitor_configure
 
 
@@ -109,6 +128,10 @@ def __scan_worker(watcher_instance, target_directory, recursive_watch):
 		# }}} check if need do scan
 
 		if perform_scan:
+			# initial ignorance checker for this round
+			if _ignorance_checker is not None:
+				_ignorance_checker(None, None)
+			
 			# TODO: do scan
 
 			current_tstamp = time.time()

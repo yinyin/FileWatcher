@@ -111,4 +111,34 @@ class TimeInterval:
 
 
 
+_ignorance_checker_list = {}
+def register_ignorance_checker(name, checker):
+	""" 註冊忽略路徑與檔案檢查器，由針對專案客製化的程式載入器呼叫
+	
+	參數:
+		name - 要註冊的名字
+		checker - 進行路徑與檔案名稱檢查的函式，函數原型: (dirlist[]=None, filename=None)
+	"""
+
+	global _ignorance_checker_list
+
+	_ignorance_checker_list[name] = checker
+# ### def register_ignorance_checker
+
+def lookup_ignorance_checker(name):
+	""" 找尋以指定名稱註冊的檢查器
+	
+	參數:
+		name - 要找尋的名字
+	回傳值:
+		檢查器，或是 None
+	"""
+	
+	if name in _ignorance_checker_list:
+		return _ignorance_checker_list[name]
+	return None
+# ### def lookup_ignorance_checker
+
+
+
 # vim: ts=4 sw=4 ai nowrap
