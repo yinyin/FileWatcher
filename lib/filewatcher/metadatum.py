@@ -119,7 +119,7 @@ class MetaStorage:
 		return result
 	# ### test_file_duplication_and_checkin
 
-	def test_file_presence_and_checkin(self, file_relfolder, file_name, file_size, file_mtime):
+	def test_file_presence_and_checkin(self, file_relfolder, file_name, file_size, file_mtime, tstamp=None):
 		""" 檢查檔案是不是已經存在，並新增或更新相關紀錄，並傳回檔案是新檔或是有變更等資訊
 
 		參數:
@@ -140,13 +140,16 @@ class MetaStorage:
 		result_status = None
 		file_size = int(file_size)
 		file_mtime = int(file_mtime)
+		
+		if tstamp is None:
+			tstamp = int(time.time())
 
 		c = self.db.cursor()
 
 		c.execute("""SELECT file_size, file_mtime, report_status FROM PresenceCheck WHERE (file_relfolder = ?) AND (file_name = ?)""", (file_relfolder, file_name,))
 		r = c.fetchone()
 		if r is None:
-			c.execute("""INSERT INTO PresenceCheck(file_relfolder, file_name, file_size, file_mtime, report_status, first_contact_time, last_contact_time) VALUES(?, ?, ?, ?, ?, CAST(strftime('%s', 'now') AS INTEGER), CAST(strftime('%s', 'now') AS INTEGER))""", (file_relfolder, file_name, file_size, file_mtime, __MSTORAGE_FRESH,))
+			c.execute("""INSERT INTO PresenceCheck(file_relfolder, file_name, file_size, file_mtime, report_status, first_contact_time, last_contact_time) VALUES(?, ?, ?, ?, ?, ?, ?)""", (file_relfolder, file_name, file_size, file_mtime, __MSTORAGE_FRESH, tstamp, tstamp,))
 			result_status = FPCHK_FRESH
 		else:
 			meta_size = int(r[0])
@@ -178,7 +181,7 @@ class MetaStorage:
 					result_status = FPCHK_MODIFING
 			# }}} caculate new rep-status and return message
 
-			c.execute("""UPDATE PresenceCheck SET file_size=?, file_mtime=?, report_status=?, last_contact_time=CAST(strftime('%s', 'now') AS INTEGER) WHERE (file_relfolder = ?) AND (file_name = ?)""", (file_size, file_mtime, new_repstatus, file_relfolder, file_name,))
+			c.execute("""UPDATE PresenceCheck SET file_size=?, file_mtime=?, report_status=?, last_contact_time=? WHERE (file_relfolder = ?) AND (file_name = ?)""", (file_size, file_mtime, new_repstatus, tstamp, file_relfolder, file_name,))
 		c.close()
 		self.db.commit()
 
