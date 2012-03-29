@@ -3,6 +3,7 @@
 """ 定時掃描變更檔案系統監視模組 """
 
 import time
+import copy
 
 from filewatcher import componentprop
 from filewatcher import filewatchconfig
@@ -27,7 +28,7 @@ def set_ignorance_checker(checker):
 	""" 設定忽略路徑與檔案檢查器
 	
 	參數:
-		checker - 進行路徑與檔案名稱檢查的函式，函數原型: (dirlist[]=None, filename=None)
+		checker - 進行路徑與檔案名稱檢查的函式，函數原型: (relpath=None, filename=None) 回傳 True 表要忽略所檢查的項目
 	"""
 	global _ignorance_checker
 	
@@ -97,6 +98,52 @@ def monitor_configure(config, metastorage):
 
 __wk_thread = None
 __wk_do_scan = False
+
+def __scan_walk_impl(last_scan_time, watcher_instance, target_directory, recursive_watch):
+	
+	current_tstamp = int(time.time())
+	
+	for root, dirs, files in os.walk(target_directory):
+		# 製造相對路徑
+		relpath = os.path.relpath(root, target_directory)
+		if '.' == relpath:
+			relpath = ''
+		
+		# {{{ 掃描所有檔案是否有變動
+		for f in files:
+			fpath = os.path.join(root, f)
+			finfo = os.stat(fpath)
+			
+			is_updated_file = False
+			
+			# {{{ 檢查是否是有變動的檔案
+			if _metastorage is not None:	# 採用資料庫檢查
+				r = _metastorage.test_file_presence_and_checkin(relpath, f, finfo.st_size, finfo.st_mtime, current_tstamp)
+				if metadatum.FPCHK_STABLE == r:
+					is_updated_file = True
+			elif finfo.st_mtime > last_scan_time:	# 採用時間比對
+				is_updated_file = True
+			# }}} 檢查是否是有變動的檔案
+			
+			if is_updated_file:
+				watcher_instance.discover_file_change(f, relpath, watcher.FEVENT_MODIFIED)
+		# }}} 掃描所有檔案是否有變動
+
+		# {{{ 檢查是否要掃描子資料夾
+		if recursive_watch:
+			if _ignorance_checker is not None:
+				for d in dirs:
+					drel = os.path.join(relpath, d)
+					if _ignorance_checker(drel, None):
+						dirs.remove(d)
+		else:
+			del dirs[:]
+		# }}} 檢查是否要掃描子資料夾
+
+	# 產生刪除檔案資料
+	if _metastorage is not None:
+		# TODO - read deleted entries
+# ### def __scan_walk_impl
 
 def __scan_worker(watcher_instance, target_directory, recursive_watch):
 	global __wk_do_scan
