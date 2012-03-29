@@ -68,12 +68,12 @@ class MetaStorage:
 		c = self.db.cursor()
 
 		# 刪除過舊的重複性檢查資料
-		c.execute("""DELETE FROM DuplicateCheck WHERE ((CAST(strftime('%s', 'now') AS INTEGER) + ?) > last_contact_time) AND (lifetime_retain = 0)""",
+		c.execute("""DELETE FROM DuplicateCheck WHERE ((CAST(strftime('%s', 'now') AS INTEGER) - ?) > last_contact_time) AND (lifetime_retain = 0)""",
 				(self.meta_dupcheck_reserve_second,))
 
 		# 刪除過舊的新增或修改檔案檢查資料
-		c.execute("""DELETE FROM PresenceCheck WHERE ((CAST(strftime('%s', 'now') AS INTEGER) + ?) > last_contact_time)""",
-				(self.meta_dupcheck_reserve_second,))
+		c.execute("""DELETE FROM PresenceCheck WHERE (? > last_contact_time)""",
+				(int(now_tstamp - self.meta_missingfile_reserve_second),))
 
 		c.close()
 		self.db.commit()
@@ -187,7 +187,35 @@ class MetaStorage:
 
 		return result_status
 	# ### test_file_presence_and_checkin
+	
+	def test_file_deletion_and_purge(self, tstamp=None):
+		""" 傳回已刪除檔案的串列
+		
+		參數:
+			tstamp - 上次偵測時間的時戳
+		回傳值:
+			含有檔案相對路徑與檔名 tuple 的串列
+		"""
 
+		if tstamp is None:
+			tstamp = time.time() - self.meta_missingfile_reserve_second
+		
+		deleted_file = []
+		
+		c = self.db.cursor()
+
+		c.execute("""SELECT file_relfolder, file_name FROM PresenceCheck WHERE (last_contact_time < ?)""", (tstamp,))
+		r = c.fetchone()
+		while r is not None:
+			deleted_file.append( (r[0], r[1],) )
+			r = c.fetchone()
+		c.execute("""DELETE FROM PresenceCheck WHERE (last_contact_time < ?)""", (tstamp,))
+		
+		c.close()
+		self.db.commit()
+		
+		return deleted_file
+	# ### def test_file_deletion_and_purge
 # ### MetaStorage
 
 

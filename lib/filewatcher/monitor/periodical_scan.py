@@ -142,7 +142,9 @@ def __scan_walk_impl(last_scan_time, watcher_instance, target_directory, recursi
 
 	# 產生刪除檔案資料
 	if _metastorage is not None:
-		# TODO - read deleted entries
+		df = _metastorage.test_file_deletion_and_purge(current_tstamp-1)
+		for dfinfo in df:
+			watcher_instance.discover_file_change(df[1], df[0], watcher.FEVENT_DELETED)
 # ### def __scan_walk_impl
 
 def __scan_worker(watcher_instance, target_directory, recursive_watch):
