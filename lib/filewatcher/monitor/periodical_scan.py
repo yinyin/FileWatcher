@@ -180,8 +180,8 @@ def __scan_worker(watcher_instance, target_directory, recursive_watch):
 			# initial ignorance checker for this round
 			if _ignorance_checker is not None:
 				_ignorance_checker(None, None)
-			
-			# TODO: do scan
+
+			__scan_walk_impl(last_scan, watcher_instance, target_directory, recursive_watch)	# do scan
 
 			current_tstamp = time.time()
 			last_scan = current_tstamp
