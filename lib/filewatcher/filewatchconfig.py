@@ -117,7 +117,7 @@ def register_ignorance_checker(name, checker):
 	
 	參數:
 		name - 要註冊的名字
-		checker - 進行路徑與檔案名稱檢查的函式，函數原型: (dirlist[]=None, filename=None)
+		checker - 進行路徑與檔案名稱檢查的函式，函數原型: (relpath=None, filename=None) 回傳 True 表要忽略所檢查的項目
 	"""
 
 	global _ignorance_checker_list
