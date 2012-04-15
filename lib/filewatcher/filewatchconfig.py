@@ -140,5 +140,21 @@ def lookup_ignorance_checker(name):
 # ### def lookup_ignorance_checker
 
 
+def load_config(config_filename, config_reader):
+	"""" 讀取設定檔內容
+	
+	參數:
+		config_filename - 設定檔檔名
+		config_reader - 模組的設定檔讀取
+	"""
+	
+	fp = open(config_filename, 'r')
+	configMap = yaml.load(fp)
+	fp.close()
+	
+	
+# ### def load_config
+
+
 
 # vim: ts=4 sw=4 ai nowrap
