@@ -6,6 +6,42 @@ import re
 import time
 import yaml
 
+from filewatcher import metadatum
+
+
+class WatcherConfiguration:
+	""" global configuration """
+	
+	def __init__(self, target_directory, recursive_watch, meta_db_path, meta_reserve_day_duplicatecheck, meta_reserve_day_missingcheck):
+		""" 建構子
+
+		參數:
+			target_directory - 要監視的目錄路徑
+			recursive_watch - 是否遞迴監視子目錄
+			meta_db_path - Meta 資料庫檔案路徑
+			meta_reserve_day_duplicatecheck - 重複檔案檢查資訊留存天數
+			meta_reserve_day_missingcheck - 已刪除檔案檢查資訊留存天數
+		"""
+	
+		self.target_directory = target_directory
+		self.recursive_watch = recursive_watch
+
+		self.meta_db_path = meta_db_path
+		self.meta_reserve_day_duplicatecheck = meta_reserve_day_duplicatecheck
+		self.meta_reserve_day_missingcheck = meta_reserve_day_missingcheck
+		
+		self.metadb = None
+		self._setup_meta_db()
+	# ### def __init__
+	
+	def _setup_meta_db(self):
+		""" 當指定了 Meta 資料庫檔案路徑時，建立 Meta 資料庫物件 """
+
+		if self.meta_db_path is not None:
+			self.metadb = metadatum.MetaStorage(self.meta_db_path, self.meta_reserve_day_duplicatecheck, self.meta_reserve_day_missingcheck)
+	# ### def _setup_meta_db
+# ### class WatcherConfiguration
+
 
 class OperationEntry:
 	""" configuration of operation """
@@ -140,6 +176,60 @@ def lookup_ignorance_checker(name):
 # ### def lookup_ignorance_checker
 
 
+def _load_config_impl_globalconfig(configMap):
+	""" 讀取全域設定資訊
+	
+	參數:
+		configMap - 設定值資訊字典
+	回傳值:
+		WatcherConfiguration 物件
+	"""
+
+	global_config = None
+	
+	target_directory = configMap['target_directory']
+	if (target_directory is None) or (False == os.path.isdir(target_directory)):
+		return None
+	
+	# {{{ set 'recursive_watch'
+	recursive_watch = False
+	if 'recursive_watch' in configMap:
+		cfg_recursivewatch = configMap['recursive_watch']
+		if isinstance(cfg_recursivewatch, bool):
+			recursive_watch = cfg_recursivewatch
+		elif (isinstance(cfg_recursivewatch, str) or isinstance(cfg_recursivewatch, unicode)) and (len(cfg_recursivewatch) > 1):
+			cfg_recursivewatch = cfg_recursivewatch[0:1]
+			if ('y' == cfg_recursivewatch) or ('Y' == cfg_recursivewatch):
+				recursive_watch = True
+		elif isinstance(cfg_recursivewatch, int)
+			if cfg_recursivewatch != 0:
+				recursive_watch = True
+	# }}} set 'recursive_watch'
+
+	# {{{ load meta storage options
+	meta_db_path = None
+	meta_reserve_day_duplicatecheck = 3
+	meta_reserve_day_missingcheck = 2
+	if ('meta' in configMap) and isinstance():
+		meta_cfg = configMap['meta']
+		meta_db_path = meta_cfg['db_path']
+		
+		if 'duplicate_check_reserve_day' in meta_cfg:
+			meta_reserve_day_duplicatecheck = int(meta_cfg['duplicate_check_reserve_day'])
+			if meta_reserve_day_duplicatecheck < 1:
+				meta_reserve_day_duplicatecheck = 1
+		
+		if 'missing_detect_reserve_day' in meta_cfg:
+			meta_reserve_day_missingcheck = int(meta_cfg['missing_detect_reserve_day'])
+			if meta_reserve_day_missingcheck < 1:
+				meta_reserve_day_missingcheck = 1
+	# }}} load meta storage options
+	
+	global_config = WatcherConfiguration(target_directory, recursive_watch, meta_db_path, meta_reserve_day_duplicatecheck, meta_reserve_day_missingcheck)
+	
+	return global_config
+# ### _load_config_impl_globalconfig
+
 def load_config(config_filename, config_reader):
 	"""" 讀取設定檔內容
 	
@@ -151,6 +241,11 @@ def load_config(config_filename, config_reader):
 	fp = open(config_filename, 'r')
 	configMap = yaml.load(fp)
 	fp.close()
+	
+	global_config = _load_config_impl_globalconfig(configMap)
+	if global_config is None:
+		return None
+	
 	
 	
 # ### def load_config

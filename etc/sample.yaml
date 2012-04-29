@@ -5,9 +5,10 @@ meta:
   db_path: /opt/filewatcher/var/vizdatamon_meta.sqlite
   duplicate_check_reserve_day: 3
 
-periodical-scan:
-  scan_interval: 1200
-  use_meta: True
+monitor:
+  periodical-scan:
+    scan_interval: 1200
+    use_meta: True
 
 operator:
   program_runner:
