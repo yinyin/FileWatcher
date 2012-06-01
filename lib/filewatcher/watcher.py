@@ -2,7 +2,9 @@
 
 import time
 
-from operator import coderunner
+from filewatcher import filewatchconfig
+
+from filewatcher.operator import coderunner
 
 __enabled_modules = [coderunner]
 
@@ -150,7 +152,12 @@ def run_watcher(config_filepath):
 
 	config_readers, monitor_implement, operation_deliver, operation_schedule_seq, operation_run_newupdate_seq, operation_run_dismiss_seq, = _get_module_interfaces(__enabled_modules)
 
-	# TODO: load config
+	# load config
+	cfg = filewatchconfig.load_config(config_filepath, config_readers, operation_deliver, operation_schedule_seq, operation_run_newupdate_seq, operation_run_dismiss_seq)
+	if cfg is None:
+		print "ERR: cannot load global configuration"
+		return 1
+	global_config, watch_entries, = cfg
 	
 	# TODO: load modules
 	
