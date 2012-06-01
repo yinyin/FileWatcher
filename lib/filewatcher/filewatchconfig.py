@@ -63,14 +63,15 @@ class OperationEntry:
 class MonitorEntry:
 	""" monitor configuration """
 
-	def __init__(self, file_regex, path_regex, do_dupcheck, operation, process_as_uniqname=True, content_check_label=None, ignorance_checker=None):
+	def __init__(self, file_regex, path_regex, do_dupcheck, operation_update, operation_remove, process_as_uniqname=True, content_check_label=None, ignorance_checker=None):
 		""" 建構子
 
 		參數:
 			file_regex - 檔名正規表示式
 			path_regex - 路徑 (相對於 target_directory) 正規表示式
 			do_dupcheck - 是否進行重複性檢查
-			operation - 存有作業設定的串列
+			operation_update - 存有作業設定的串列 (針對新增或修改檔案)
+			operation_remove - 存有作業設定的串列 (針對移出或刪除檔案)
 			process_as_uniqname - 是否使用唯一檔名進行後續作業 (需要目錄的 write 權限)
 			content_check_label - 是否在進行重複性比對作業時使用指定的字串來覆蓋掉檔名 (不同檔名視為同一筆檔案)
 			ignorance_checker - 檢查所找到的目錄或檔案是否要忽略
@@ -78,7 +79,9 @@ class MonitorEntry:
 
 		self.file_regex = re.compile(file_regex)
 		self.path_regex = re.compile(path_regex)
-		self.operation = operation
+		self.operation_update = operation_update
+		self.operation_remove = operation_remove
+
 		self.process_as_uniqname = process_as_uniqname
 
 		self.do_dupcheck = False
@@ -230,22 +233,100 @@ def _load_config_impl_globalconfig(configMap):
 	return global_config
 # ### _load_config_impl_globalconfig
 
+def _load_config_impl_moduleconfig(configMap, config_reader):
+	""" 讀取模組設定資訊
+	
+	參數:
+		configMap - 設定值資訊字典
+		config_reader - 以「模組的設定名稱」為鍵「模組實體」為值的 dict 結構體
+	回傳值:
+		(無)
+	"""
+	
+	for mod_cfgname, mod_object in config_reader.iteritems():
+		if mod_cfgname in configMap:
+			m = mod_object.get_module_prop()
+			cfg_content = configMap[mod_cfgname]
+			if m.isMonitor:
+				mod_object.monitor_configure(cfg_content, global_config.metadb)
+			if m.isOperator:
+				mod_object.operator_configure(cfg_content, global_config.metadb)
+# ### _load_config_impl_moduleconfig
+
+def _load_config_impl_watchentries(watch_entries_cfg, ):
+	
+	watch_entries = []
+	
+	for entry in watch_entries_cfg:
+		try:
+			file_regex = re.compile(entry['file_regex'])
+			path_regex = None
+			if 'path_regex' in entry:
+				path_regex = re.compile(entry['path_regex'])
+			
+			do_dupcheck = False
+			if 'duplicate_check' in entry:
+				v = entry['duplicate_check']
+				if ( isinstance(v, bool) and (True == v) )
+					or ( isinstance(v, str) and (v in ('Y', 'y', '1', 'Yes', 'YES', 'yes', 'T', 'True',)) )
+					or ( isinstance(v, unicode) and (v in (u'Y', u'y', u'1', u'Yes', u'YES', u'yes', u'T', u'True',)) ):
+					do_dupcheck = True
+			
+			content_check_label = None
+			if (True == do_dupcheck) and ('duplicate_content_check_label' in entry):
+				v = str(entry['duplicate_content_check_label'])
+				v = v.strip()
+				if len(v) > 0:
+					content_check_label = v
+			
+			process_as_uniqname = True
+			if 'process_as_uniqname' in entry:
+				v = entry['process_as_uniqname']
+				if ( isinstance(v, bool) and (True == v) )
+					or ( isinstance(v, str) and (v in ('Y', 'y', '1', 'Yes', 'YES', 'yes', 'T', 'True',)) )
+					or ( isinstance(v, unicode) and (v in (u'Y', u'y', u'1', u'Yes', u'YES', u'yes', u'T', u'True',)) ):
+					process_as_uniqname = True
+			
+			ignorance_checker = None
+			if 'ignorance-checker' in entry:
+				ignorance_checker = lookup_ignorance_checker(str(entry['ignorance-checker']))
+			
+			operation_update = []	# TODO
+			operation_remove = []	# TODO
+			
+			entryobj = MonitorEntry(file_regex, path_regex, do_dupcheck, operation_update, operation_remove, process_as_uniqname, content_check_label, ignorance_checker)
+			watch_entries.append(entryobj)
+		except:
+			print "Failed on loading watch entry: %r" % (entry,)
+			raise
+	
+	return watch_entries
+# ### def _load_config_impl_watchentries
+
 def load_config(config_filename, config_reader):
 	"""" 讀取設定檔內容
 	
 	參數:
 		config_filename - 設定檔檔名
-		config_reader - 模組的設定檔讀取
+		config_reader - 以「模組的設定名稱」為鍵「模組實體」為值的 dict 結構體
+		
 	"""
 	
 	fp = open(config_filename, 'r')
 	configMap = yaml.load(fp)
 	fp.close()
 	
+	# Global Configuration
 	global_config = _load_config_impl_globalconfig(configMap)
 	if global_config is None:
 		return None
 	
+	# Module Configuration
+	_load_config_impl_moduleconfig(configMap, config_reader)
+	# }}} configure modules
+	
+	# Watch Entries
+	watch_entries = _load_config_impl_watchentries(configMap['watching_entries'])
 	
 	
 # ### def load_config
