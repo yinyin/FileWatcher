@@ -146,6 +146,7 @@ class _RunnerQueue:
 
 
 
+_cached_module_prop_instance = componentprop.OperatorProp('program_runner', 'run_program', schedule_priority=None, run_priority=3)
 def get_module_prop():
 	""" 取得操作器各項特性/屬性
 
@@ -154,7 +155,7 @@ def get_module_prop():
 		傳回 componentprop.OperatorProp 物件
 	"""
 
-	return componentprop.OperatorProp('program_runner', 'run_program', schedule_priority=None, run_priority=3)
+	return _cached_module_prop_instance
 # ### def get_module_prop
 
 

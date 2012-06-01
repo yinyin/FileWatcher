@@ -9,6 +9,7 @@ from filewatcher import componentprop
 from filewatcher import filewatchconfig
 
 
+_cached_module_prop_instance = componentprop.MonitorProp('periodical-scan')
 def get_module_prop():
 	""" 取得監視器各項特性/屬性
 
@@ -18,7 +19,7 @@ def get_module_prop():
 		傳回 componentprop.MonitorProp 物件
 	"""
 
-	return componentprop.MonitorProp('periodical-scan')
+	return _cached_module_prop_instance
 # ### def get_module_prop
 
 
