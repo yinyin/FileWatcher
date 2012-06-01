@@ -173,6 +173,10 @@ def lookup_ignorance_checker(name):
 		檢查器，或是 None
 	"""
 	
+	name = name.strip()
+	if len(name) < 1:
+		return None
+	
 	if name in _ignorance_checker_list:
 		return _ignorance_checker_list[name]
 	return None
