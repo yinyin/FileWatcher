@@ -48,7 +48,7 @@ class WatcherEngine:
 
 		self.last_file_event_tstamp = time.time()	# 更新事件時戳
 
-		pass
+		pass	# TODO: call operators
 	# ### def discover_file_change
 # ### class WatcherEngine
 
@@ -122,7 +122,7 @@ def _get_module_interfaces(mods):
 	operation_run_dismiss_seq = [x.operation_name for x in sorted(operation_run_dismiss_seq, key=__keyfunction_prop_run)]
 	# }}} sort operator module lists
 
-	return (config_readers, monitor_implement, operation_deliver, operation_schedule_seq, operation_run_newupdate_seq, operation_run_dismiss_seq)
+	return (config_readers, monitor_implement, operation_deliver, operation_schedule_seq, operation_run_newupdate_seq, operation_run_dismiss_seq,)
 # ### def _get_module_interfaces
 
 
@@ -144,7 +144,7 @@ def run_watcher(config_filepath):
 	""" 啟動 watcher
 	"""
 
-	config_readers, monitor_implement, operation_deliver, operation_schedule_seq, operation_run_newupdate_seq, operation_run_dismiss_seq = _get_module_interfaces(__enabled_modules)
+	config_readers, monitor_implement, operation_deliver, operation_schedule_seq, operation_run_newupdate_seq, operation_run_dismiss_seq, = _get_module_interfaces(__enabled_modules)
 
 	# TODO: load config
 	
