@@ -142,6 +142,10 @@ def _termination_signal_handler(signum, frame):
 
 def run_watcher(config_filepath):
 	""" 啟動 watcher
+	執行前應先對 filewatchconfig 模組註冊好 ignorance checker
+	
+	參數:
+		config_filepath - 設定檔路徑
 	"""
 
 	config_readers, monitor_implement, operation_deliver, operation_schedule_seq, operation_run_newupdate_seq, operation_run_dismiss_seq, = _get_module_interfaces(__enabled_modules)
