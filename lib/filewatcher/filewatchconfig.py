@@ -46,16 +46,18 @@ class WatcherConfiguration:
 class OperationEntry:
 	""" configuration of operation """
 
-	def __init__(self, op, argv):
+	def __init__(self, opname, argv, opmodule):
 		""" 建構子
 
 		參數:
-			op - 作業名稱
+			opname - 作業名稱
 			argv - 作業參數字串
+			opmodule - 執行作業的模組
 		"""
 
-		self.op = op
+		self.opname = opname
 		self.argv = argv
+		self.opmodule = opmodule
 	# ### __init__
 # ### class OperationEntry
 
@@ -257,46 +259,111 @@ def _load_config_impl_moduleconfig(configMap, config_reader):
 				mod_object.operator_configure(cfg_content, global_config.metadb)
 # ### _load_config_impl_moduleconfig
 
-def _load_config_impl_watchentries(watch_entries_cfg, ):
+def _load_config_impl_watchentries_operation(operation_cfg, operation_deliver, operation_schedule_seq, operation_run_seq):
+	""" 載入 watch entries 的 operation 作業設定
+	
+	參數:
+		operation_cfg - 作業設定
+		operation_deliver - 以作業名稱為 key 監視工作模組為 value 的字典
+		operation_schedule_seq - 排定作業塊先後順序用的作業名稱串列
+		operation_run_seq - 排定作業執行先後順序用的作業名稱串列
+	回傳值:
+		含有 OperationEntry 物件的串列
+	"""
+	
+	ordered_operation_block = []
+	
+	# {{{ 將 operation block 依據 operation_schedule_seq 排序
+	remain_oprcfg = operation_cfg
+	for opname in operation_schedule_seq:
+		next_remain_oprcfg = []
+		for oprblk_cfg in remain_oprcfg:
+			if opname in oprblk_cfg:
+				ordered_operation_block.append(oprblk_cfg)
+			else:
+				next_remain_oprcfg.append(oprblk_cfg)
+		if len(next_remain_oprcfg) < 1:
+			remain_oprcfg = None
+			break
+		remain_oprcfg = next_remain_oprcfg
+	# }}} 將 operation block 依據 operation_schedule_seq 排序
+	
+	organized_operation_block = []
+	
+	# {{{ 將各 operation block 內的作業依據 operation_run_seq 排序
+	for oprblk_cfg in ordered_operation_block:
+		oprblock = []
+		for opname in operation_run_seq:
+			if opname in oprblk_cfg:
+				oparg = operation_deliver[opname].read_operation_argv(oprblk_cfg[opname])
+				if oparg is not None:
+					oprblock.append(OperationEntry(opname, oparg, operation_deliver[opname]))
+		if len(oprblock) > 0:
+			organized_operation_block.append(oprblock)
+	# }}} 將各 operation block 內的作業依據 operation_run_seq 排序
+	
+	return organized_operation_block
+# ### def _load_config_impl_watchentries_updateoprn
+
+def _load_config_impl_watchentries(watch_entries_cfg, operation_deliver, operation_schedule_seq, operation_run_newupdate_seq, operation_run_dismiss_seq):
+	""" 載入檔案規則設定
+	
+	參數:
+		watch_entries_cfg - 檔案監看規則設定
+		operation_deliver - 以作業名稱為 key 監視工作模組為 value 的字典
+		operation_schedule_seq - 排定作業塊先後順序用的作業名稱串列
+		operation_run_newupdate_seq - 排定作業執行先後順序用的作業名稱串列
+	回傳值:
+		含有 OperationEntry 物件的串列
+	"""
 	
 	watch_entries = []
 	
-	for entry in watch_entries_cfg:
+	for entry_cfg in watch_entries_cfg:
 		try:
-			file_regex = re.compile(entry['file_regex'])
+			file_regex = re.compile(entry_cfg['file_regex'])
 			path_regex = None
 			if 'path_regex' in entry:
-				path_regex = re.compile(entry['path_regex'])
+				path_regex = re.compile(entry_cfg['path_regex'])
 			
 			do_dupcheck = False
-			if 'duplicate_check' in entry:
-				v = entry['duplicate_check']
+			if 'duplicate_check' in entry_cfg:
+				v = entry_cfg['duplicate_check']
 				if ( isinstance(v, bool) and (True == v) )
 					or ( isinstance(v, str) and (v in ('Y', 'y', '1', 'Yes', 'YES', 'yes', 'T', 'True',)) )
 					or ( isinstance(v, unicode) and (v in (u'Y', u'y', u'1', u'Yes', u'YES', u'yes', u'T', u'True',)) ):
 					do_dupcheck = True
 			
 			content_check_label = None
-			if (True == do_dupcheck) and ('duplicate_content_check_label' in entry):
-				v = str(entry['duplicate_content_check_label'])
+			if (True == do_dupcheck) and ('duplicate_content_check_label' in entry_cfg):
+				v = str(entry_cfg['duplicate_content_check_label'])
 				v = v.strip()
 				if len(v) > 0:
 					content_check_label = v
 			
 			process_as_uniqname = True
-			if 'process_as_uniqname' in entry:
-				v = entry['process_as_uniqname']
+			if 'process_as_uniqname' in entry_cfg:
+				v = entry_cfg['process_as_uniqname']
 				if ( isinstance(v, bool) and (True == v) )
 					or ( isinstance(v, str) and (v in ('Y', 'y', '1', 'Yes', 'YES', 'yes', 'T', 'True',)) )
 					or ( isinstance(v, unicode) and (v in (u'Y', u'y', u'1', u'Yes', u'YES', u'yes', u'T', u'True',)) ):
 					process_as_uniqname = True
 			
 			ignorance_checker = None
-			if 'ignorance-checker' in entry:
-				ignorance_checker = lookup_ignorance_checker(str(entry['ignorance-checker']))
+			if 'ignorance-checker' in entry_cfg:
+				ignorance_checker = lookup_ignorance_checker(str(entry_cfg['ignorance-checker']))
 			
-			operation_update = []	# TODO
-			operation_remove = []	# TODO
+			# {{{ load operations
+			operation_update = None
+			if 'update-operation' in entry_cfg:
+				operation_update = _load_config_impl_watchentries_updateoprn(entry_cfg['update-operation'], operation_deliver, operation_schedule_seq, operation_run_newupdate_seq)
+			elif 'operation' in entry_cfg:
+				operation_update = _load_config_impl_watchentries_updateoprn(entry_cfg['operation'], operation_deliver, operation_schedule_seq, operation_run_newupdate_seq)
+			
+			operation_remove = None
+			if 'remove-operation' in entry_cfg:
+				operation_remove = _load_config_impl_watchentries_updateoprn(entry_cfg['remove-operation'], operation_deliver, operation_schedule_seq, operation_run_dismiss_seq)
+			# }}} load operations
 			
 			entryobj = MonitorEntry(file_regex, path_regex, do_dupcheck, operation_update, operation_remove, process_as_uniqname, content_check_label, ignorance_checker)
 			watch_entries.append(entryobj)
@@ -307,13 +374,18 @@ def _load_config_impl_watchentries(watch_entries_cfg, ):
 	return watch_entries
 # ### def _load_config_impl_watchentries
 
-def load_config(config_filename, config_reader):
+def load_config(config_filename, config_reader, operation_deliver, operation_schedule_seq, operation_run_newupdate_seq, operation_run_dismiss_seq):
 	"""" 讀取設定檔內容
 	
 	參數:
 		config_filename - 設定檔檔名
 		config_reader - 以「模組的設定名稱」為鍵「模組實體」為值的 dict 結構體
-		
+		operation_deliver - 以作業名稱為 key 監視工作模組為 value 的字典
+		operation_schedule_seq - 排定作業塊先後順序用的作業名稱串列
+		operation_run_newupdate_seq - 排定作業執行先後順序用的作業名稱串列 (針對檔案新增或修改事件)
+		operation_run_dismiss_seq - 排定作業執行先後順序用的作業名稱串列 (針對檔案刪除或移出事件)
+	傳回值:
+		(global_config, watch_entries,) - 存放 WatcherConfiguration 物件 (global_config) 及 MonitorEntry 物件 list (watch_entries) 的 tuple
 	"""
 	
 	fp = open(config_filename, 'r')
@@ -330,9 +402,9 @@ def load_config(config_filename, config_reader):
 	# }}} configure modules
 	
 	# Watch Entries
-	watch_entries = _load_config_impl_watchentries(configMap['watching_entries'])
+	watch_entries = _load_config_impl_watchentries(configMap['watching_entries'], operation_deliver, operation_schedule_seq, operation_run_newupdate_seq, operation_run_dismiss_seq)
 	
-	
+	return (global_config, watch_entries,)
 # ### def load_config
 
 
