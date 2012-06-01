@@ -185,6 +185,7 @@ def lookup_ignorance_checker(name):
 # ### def lookup_ignorance_checker
 
 
+
 def _load_config_impl_globalconfig(configMap):
 	""" 讀取全域設定資訊
 	
@@ -406,6 +407,79 @@ def load_config(config_filename, config_reader, operation_deliver, operation_sch
 	
 	return (global_config, watch_entries,)
 # ### def load_config
+
+
+
+def __keyfunction_prop_schedule(prop):
+	""" 排序用 key function (componentprop.OperatorProp 物件，針對 schedule_priority) """
+
+	return prop.schedule_priority
+# ### def __keyfunction_schedule
+
+def __keyfunction_prop_run(prop):
+	""" 排序用 key function (componentprop.OperatorProp 物件，針對 run_priority) """
+
+	return prop.run_priority
+# ### def __keyfunction_prop_run
+
+
+def get_module_interfaces(mods):
+	""" 取得工作模組的屬性，並依此設定相關參數
+
+	參數:
+		mods - 含有工作模組的串列
+	回傳值:
+		含有以下元素的 tuple: (config_readers, monitor_implement, operation_deliver, operation_schedule_seq, operation_run_seq)
+		config_readers - 以設定檔段落名稱為 key 工作模組為 value 的字典
+		monitor_implement - 含有監視工作模組的串列
+		operation_deliver - 以作業名稱為 key 監視工作模組為 value 的字典
+		operation_schedule_seq - 排定作業塊先後順序用的作業名稱串列
+		operation_run_newupdate_seq - 排定作業執行先後順序用的作業名稱串列 (針對檔案新增或修改事件)
+		operation_run_dismiss_seq - 排定作業執行先後順序用的作業名稱串列 (針對檔案刪除或移出事件)
+	"""
+
+	config_readers = {}
+
+	monitor_implement = []
+
+	operation_deliver = {}
+	operation_schedule_seq = []
+	operation_run_newupdate_seq = []
+	operation_run_dismiss_seq = []
+
+	for m in mods:
+		prop = m.get_module_prop()
+
+		config_sec_name = prop.module_name
+		config_readers[config_sec_name] = m
+
+		# {{{ if module is monitor module
+		if prop.isMonitor:
+			monitor_implement.append(m)
+		# }}} if module is monitor module
+
+		# {{{ if module is operator module
+		if prop.isOperator:
+			operation_name = prop.operation_name
+			if prop.run_priority is not None:	# only push into dict. if run-priority is available
+				operation_deliver[operation_name] = m
+				operation_run_newupdate_seq.append(prop)
+
+				if prop.schedule_priority is not None:
+					operation_schedule_seq.append(prop)
+				
+				if prop.handle_dismiss:
+					operation_run_dismiss_seq.append(prop)
+		# }}} if module is operator module
+
+	# {{{ sort operator module lists
+	operation_schedule_seq = [x.operation_name for x in sorted(operation_schedule_seq, key=__keyfunction_prop_schedule)]	# eg: 含有 copy 的作業塊應該比含有 move 的早執行
+	operation_run_newupdate_seq = [x.operation_name for x in sorted(operation_run_newupdate_seq, key=__keyfunction_prop_run)]	# eg: copy 或 move 要比 coderunner 早執行
+	operation_run_dismiss_seq = [x.operation_name for x in sorted(operation_run_dismiss_seq, key=__keyfunction_prop_run)]
+	# }}} sort operator module lists
+
+	return (config_readers, monitor_implement, operation_deliver, operation_schedule_seq, operation_run_newupdate_seq, operation_run_dismiss_seq,)
+# ### def get_module_interfaces
 
 
 
