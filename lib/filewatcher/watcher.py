@@ -1,12 +1,9 @@
 # -*- coding: utf-8 -*-
 
 import time
+import syslog
 
 from filewatcher import filewatchconfig
-
-from filewatcher.operator import coderunner
-
-__enabled_modules = [coderunner]
 
 
 FEVENT_NEW = 1
@@ -39,7 +36,9 @@ class OperationExecRef:
 class WatcherEngine:
 	""" 被 monitor 呼叫，派送事件給 operator 執行 """
 
-	def __init__(self):
+	def __init__(self, watch_entries):
+		
+		self.watch_entries = watch_entries
 		
 		self.last_file_event_tstamp = time.time()
 	# ### def __init__
@@ -55,6 +54,39 @@ class WatcherEngine:
 # ### class WatcherEngine
 
 
+def get_builtin_modules():
+	""" 取得內建的模組 (以 tuple 形式傳回) """
+	from filewatcher.monitor import periodical_scan
+	from filewatcher.operator import coderunner
+	return (periodical_scan, coderunner,)
+# ### def get_builtin_modules
+
+
+
+def _active_watcherengine(config_filepath, enabled_modules=None):
+
+	if (enabled_modules is None):
+		enabled_modules = get_builtin_modules()
+
+	# prepare module profile
+	config_readers, monitor_implement, operation_deliver, operation_schedule_seq, operation_run_newupdate_seq, operation_run_dismiss_seq, = filewatchconfig.get_module_interfaces(enabled_modules)
+
+	# load config
+	cfg = filewatchconfig.load_config(config_filepath, config_readers, operation_deliver, operation_schedule_seq, operation_run_newupdate_seq, operation_run_dismiss_seq)
+	if cfg is None:
+		print "ERR: cannot load global configuration"
+		return None
+	global_config, watch_entries, = cfg
+	
+	w_engine = WatcherEngine(watch_entries)
+	
+	for monitor_name, monitor_m in monitor_implement.iteritems():
+		monitor_m.monitor_start(w_engine, global_config.target_directory, global_config.recursive_watch)
+		syslog.syslog(syslog.LOG_INFO, "start monitor [%s]" % (monitor_name,))
+	
+	return (global_config, monitor_implement, operation_deliver, w_engine,)
+# ### def _active_watcherengine
+
 
 __arrived_signal_handled = False	# 已收到的訊號是否已經處理完成
 __terminate_signal_recived = False	# 收到程式停止訊號
@@ -68,24 +100,16 @@ def _termination_signal_handler(signum, frame):
 	__arrived_signal_handled = True
 # ### def _term_signal_handler
 
-
-def run_watcher(config_filepath):
+def run_watcher(config_filepath, enabled_modules=None):
 	""" 啟動 watcher
 	執行前應先對 filewatchconfig 模組註冊好 ignorance checker
 	
 	參數:
 		config_filepath - 設定檔路徑
+		enabled_modules=None - 要啓用的模組串列
 	"""
 
-	# prepare module profile
-	config_readers, monitor_implement, operation_deliver, operation_schedule_seq, operation_run_newupdate_seq, operation_run_dismiss_seq, = filewatchconfig.get_module_interfaces(__enabled_modules)
-
-	# load config
-	cfg = filewatchconfig.load_config(config_filepath, config_readers, operation_deliver, operation_schedule_seq, operation_run_newupdate_seq, operation_run_dismiss_seq)
-	if cfg is None:
-		print "ERR: cannot load global configuration"
-		return 1
-	global_config, watch_entries, = cfg
+	runtimeobj = _active_watcherengine(config_filepath, enabled_modules)
 	
 	# TODO: load modules
 	
