@@ -2,8 +2,10 @@
 
 import time
 import syslog
+import shutil
 
 from filewatcher import filewatchconfig
+from filewatcher import metadatum
 
 
 FEVENT_NEW = 1
@@ -14,12 +16,13 @@ FEVENT_DELETED = 4
 class OperationExecRef:
 	""" 作業執行參考物件 """
 
-	def __init__(self, filename_matchobj, pathname_matchobj, digisig, is_dismiss_event=False):
+	def __init__(self, filename_matchobj, pathname_matchobj, digisig, event_type, is_dismiss_event=False):
 		""" 建構子
 		參數:
 			filename_matchobj - 檔名 regex 比對結果物件
 			pathname_matchobj - 路徑 regex 比對結果物件 (如果有設定路徑比對，否則為 None)
 			digisig - 數位簽章 (如果有設定內容重複檢查或是夾帶數位簽章，否則為 None)
+			event_type - 事件形式
 			is_dismiss_event - 是否為檔案刪除事件
 		"""
 
@@ -27,7 +30,13 @@ class OperationExecRef:
 		self.pathname_matchobj = pathname_matchobj
 		self.digisig = digisig
 		
+		self.event_type = event_type
 		self.is_dismiss_event = is_dismiss_event
+		if self.is_dismiss_event is None:
+			if (FEVENT_NEW == event_type) or (FEVENT_MODIFIED == event_type):
+				self.is_dismiss_event = False
+			elif FEVENT_DELETED == event_type:
+				self.is_dismiss_event = True
 		
 		self.carry_variable = {}
 # ### class OperationExecRef
@@ -49,7 +58,10 @@ class WatcherEngine:
 		self.monitor_implement = monitor_implement
 		self.operation_deliver = operation_deliver
 		
+		self.metadb = self.global_config.metadb
+		
 		self.last_file_event_tstamp = time.time()
+		self.serialcounter = 1 + (self.last_file_event_tstamp % 1024)
 	# ### def __init__
 	
 	def activate(self):
@@ -74,18 +86,92 @@ class WatcherEngine:
 			syslog.syslog(syslog.LOG_INFO, "stopped operator [%s]" % (operator_name,))
 	# ### def deactivate
 
-	def discover_file_change(self, filename, filefolder, event_type=0):
+	def __perform_operation(self, filename, folderpath, orig_path, target_path, operate_list, oprexec_ref):
+		pass	# TODO
+	# ### def __perform_operation
+
+	def discover_file_change(self, filename, folderpath, event_type=0):
 		""" 通知監視引擎找到新的檔案
 		
 		參數:
 			filename - 檔案名稱
-			filefolder - 檔案夾路徑
+			folderpath - 檔案夾路徑
 			event_type - 事件型別 (FEVENT_NEW, FEVENT_MODIFIED, FEVENT_DELETED)
 		"""
 
 		self.last_file_event_tstamp = time.time()	# 更新事件時戳
 
-		pass	# TODO: call operators
+		orig_path = os.path.join(folderpath, filename)
+		if not os.path.isfile(orig_path):
+			return
+
+		# {{{ scan watch entries
+		for w_case in self.watch_entries:
+			mobj_file = w_case.file_regex.match(filename)
+			if mobj_file is None:
+				continue
+			
+			mobj_path = None
+			if w_case.path_regex is not None:
+				mobj_path = w_case.path_regex.match(folderpath)
+				if mobj_path is None:
+					continue
+						
+			# {{{ do ignorance check
+			# TODO
+			# }}} do ignorance check
+			
+			cancel_operation = None
+			self.serialcounter = (self.serialcounter + 1) % 1024
+			
+			# {{{ build unique name if required
+			if w_case.process_as_uniqname:
+				uniq_name = "%s-Wr%04d" % (filename, self.serialcounter,)
+				target_path = os.path.join(folderpath, uniq_name)
+				try:
+					shutil.move(orig_path, target_path)
+				except shutil.Error as e:
+					print "Failed on file renaming for meta operation: %s" % (e,)
+					target_path = orig_path
+					# we will do meta operations anyway.
+			else:
+				target_path = orig_path
+			# }}} build unique name if required
+			
+			# {{{ checking if proceed
+			f_sig = None
+			if (self.metadb is not None) and (True == w_case.do_dupcheck):
+				check_label = filename
+				life_retain = False
+				if w_case.content_check_label is not None:
+					check_label = w_case.content_check_label
+					life_retain = True
+				
+				f_sig = metadatum.compute_file_signature(target_path)
+				if True == self.metadb.test_file_duplication_and_checkin(check_label, f_sig, life_retain):
+					cancel_operation = 'duplicate file (meta sig-check)'
+			# }}} checking if proceed
+			
+			# {{{ cancel operation
+			if cancel_operation is not None:
+				if True == self.global_config.remove_unoperate_file:
+					os.unlink(target_path)
+				syslog.syslog(syslog.LOG_INFO, "Cancel: [%s] reason=%s."%(orig_path, cancel_operation,))
+				return
+			# }}} cancel operation
+			
+			oprexec_ref = OperationExecRef(mobj_file, mobj_path, f_sig, event_type)
+			if (FEVENT_NEW == event_type) or (FEVENT_MODIFIED == event_type):
+				self.__perform_operation(filename, folderpath, orig_path, target_path, w_case.operation_update, oprexec_ref)
+			elif FEVENT_DELETED == event_type:
+				self.__perform_operation(filename, folderpath, orig_path, target_path, w_case.operation_remove, oprexec_ref)
+			else:
+				syslog.syslog(syslog.LOG_INFO, "NoOP: [%s] unknown event type (%r)."%(orig_path, event_type,))
+			
+			return
+		# }}} scan watch entries
+		
+		syslog.syslog(syslog.LOG_INFO, "NoWatchEntryFound: [%s]."%(orig_path,))
 	# ### def discover_file_change
 # ### class WatcherEngine
 
