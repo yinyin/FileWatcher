@@ -12,12 +12,13 @@ from filewatcher import metadatum
 class WatcherConfiguration:
 	""" global configuration """
 	
-	def __init__(self, target_directory, recursive_watch, meta_db_path, meta_reserve_day_duplicatecheck, meta_reserve_day_missingcheck):
+	def __init__(self, target_directory, recursive_watch, remove_unoperate_file, meta_db_path, meta_reserve_day_duplicatecheck, meta_reserve_day_missingcheck):
 		""" 建構子
 
 		參數:
 			target_directory - 要監視的目錄路徑
 			recursive_watch - 是否遞迴監視子目錄
+			remove_unoperate_file - 是否要移除規則檢查成功但因各種原因而未執行作業的檔案
 			meta_db_path - Meta 資料庫檔案路徑
 			meta_reserve_day_duplicatecheck - 重複檔案檢查資訊留存天數
 			meta_reserve_day_missingcheck - 已刪除檔案檢查資訊留存天數
@@ -25,6 +26,7 @@ class WatcherConfiguration:
 	
 		self.target_directory = target_directory
 		self.recursive_watch = recursive_watch
+		self.remove_unoperate_file = remove_unoperate_file
 
 		self.meta_db_path = meta_db_path
 		self.meta_reserve_day_duplicatecheck = meta_reserve_day_duplicatecheck
@@ -204,17 +206,22 @@ def _load_config_impl_globalconfig(configMap):
 	# {{{ set 'recursive_watch'
 	recursive_watch = False
 	if 'recursive_watch' in configMap:
-		cfg_recursivewatch = configMap['recursive_watch']
-		if isinstance(cfg_recursivewatch, bool):
-			recursive_watch = cfg_recursivewatch
-		elif (isinstance(cfg_recursivewatch, str) or isinstance(cfg_recursivewatch, unicode)) and (len(cfg_recursivewatch) > 1):
-			cfg_recursivewatch = cfg_recursivewatch[0:1]
-			if ('y' == cfg_recursivewatch) or ('Y' == cfg_recursivewatch):
-				recursive_watch = True
-		elif isinstance(cfg_recursivewatch, int)
-			if cfg_recursivewatch != 0:
-				recursive_watch = True
+		v = configMap['recursive_watch']
+		if ( isinstance(v, bool) and (True == v) ) or
+				( ((isinstance(v, str) or isinstance(v, unicode)) and (len(v) > 1)) and (v[0:1] in ('y', 'Y', 't', 'T',)) ) or
+				( isinstance(v, int) and (0 != v) ):
+			recursive_watch = True
 	# }}} set 'recursive_watch'
+	
+	# {{{ set 'remove_unoperate_file'
+	remove_unoperate_file = True
+	if 'remove_unoperate_file' in configMap:
+		v = configMap['remove_unoperate_file']
+		if ( isinstance(v, bool) and (False == v) ) or
+				( ((isinstance(v, str) or isinstance(v, unicode)) and (len(v) > 1)) and (v[0:1] in ('n', 'N', 'F', 'f',)) ) or
+				( isinstance(v, int) and (0 == v) ):
+			remove_unoperate_file = False
+	# }}} set 'remove_unoperate_file'
 
 	# {{{ load meta storage options
 	meta_db_path = None
