@@ -36,15 +36,51 @@ class OperationExecRef:
 class WatcherEngine:
 	""" 被 monitor 呼叫，派送事件給 operator 執行 """
 
-	def __init__(self, watch_entries):
-		
+	def __init__(self, global_config, watch_entries, monitor_implement, operation_deliver):
+		""" 建構子
+		參數:
+			global_config - 全域設定值
+			watch_entries - 監看項目設定
+			monitor_implement - Monitor 實作 (dict)
+			operation_deliver - Operator 實作 (dict)
+		"""
+		self.global_config = global_config
 		self.watch_entries = watch_entries
+		self.monitor_implement = monitor_implement
+		self.operation_deliver = operation_deliver
 		
 		self.last_file_event_tstamp = time.time()
 	# ### def __init__
+	
+	def activate(self):
+		""" 啓動監看模組，開始作業
+		"""
+		
+		for monitor_name, monitor_m in self.monitor_implement.iteritems():
+			monitor_m.monitor_start(self, self.global_config.target_directory, self.global_config.recursive_watch)
+			syslog.syslog(syslog.LOG_INFO, "start monitor [%s]" % (monitor_name,))
+	# ### def activate
+	
+	def deactivate(self):
+		""" 停止監看與作業模組，終止作業
+		"""
+		
+		for monitor_name, monitor_m in self.monitor_implement.iteritems():
+			monitor_m.monitor_stop()
+			syslog.syslog(syslog.LOG_INFO, "stopped monitor [%s]" % (monitor_name,))
+		
+		for operator_name, operator_m in self.operation_deliver.iteritems():
+			operator_name.operator_stop()
+			syslog.syslog(syslog.LOG_INFO, "stopped operator [%s]" % (operator_name,))
+	# ### def deactivate
 
 	def discover_file_change(self, filename, filefolder, event_type=0):
 		""" 通知監視引擎找到新的檔案
+		
+		參數:
+			filename - 檔案名稱
+			filefolder - 檔案夾路徑
+			event_type - 事件型別 (FEVENT_NEW, FEVENT_MODIFIED, FEVENT_DELETED)
 		"""
 
 		self.last_file_event_tstamp = time.time()	# 更新事件時戳
@@ -63,8 +99,16 @@ def get_builtin_modules():
 
 
 
-def _active_watcherengine(config_filepath, enabled_modules=None):
-
+def get_watcherengine(config_filepath, enabled_modules=None):
+	""" 取得監看引擎
+	
+	參數:
+		config_filepath - 設定檔路徑
+		enabled_modules=None - 要啓用的模組串列
+	回傳值:
+		WatcherEngine 物件
+	"""
+	
 	if (enabled_modules is None):
 		enabled_modules = get_builtin_modules()
 
@@ -78,13 +122,9 @@ def _active_watcherengine(config_filepath, enabled_modules=None):
 		return None
 	global_config, watch_entries, = cfg
 	
-	w_engine = WatcherEngine(watch_entries)
+	w_engine = WatcherEngine(global_config, watch_entries, monitor_implement, operation_deliver)
 	
-	for monitor_name, monitor_m in monitor_implement.iteritems():
-		monitor_m.monitor_start(w_engine, global_config.target_directory, global_config.recursive_watch)
-		syslog.syslog(syslog.LOG_INFO, "start monitor [%s]" % (monitor_name,))
-	
-	return (global_config, monitor_implement, operation_deliver, w_engine,)
+	return w_engine
 # ### def _active_watcherengine
 
 
@@ -109,11 +149,11 @@ def run_watcher(config_filepath, enabled_modules=None):
 		enabled_modules=None - 要啓用的模組串列
 	"""
 
-	runtimeobj = _active_watcherengine(config_filepath, enabled_modules)
-	
-	# TODO: load modules
-	
-	# TODO: start monitor
+	w_engine = get_watcherengine(config_filepath, enabled_modules)
+	if w_engine is None:
+		print "ERR: cannot load watcher engine."
+		return
+	w_engine.activate()
 
 	# {{{ loop for signal handling
 	global __terminate_signal_recived, __arrived_signal_handled
