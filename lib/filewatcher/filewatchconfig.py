@@ -208,7 +208,7 @@ def _load_config_impl_globalconfig(configMap):
 	if 'recursive_watch' in configMap:
 		v = configMap['recursive_watch']
 		if ( isinstance(v, bool) and (True == v) ) or
-				( ((isinstance(v, str) or isinstance(v, unicode)) and (len(v) > 1)) and (v[0:1] in ('y', 'Y', 't', 'T',)) ) or
+				( ((isinstance(v, str) or isinstance(v, unicode)) and (len(v) > 1)) and (str(v[0:1]) in ('y', 'Y', 't', 'T',)) ) or
 				( isinstance(v, int) and (0 != v) ):
 			recursive_watch = True
 	# }}} set 'recursive_watch'
@@ -218,7 +218,7 @@ def _load_config_impl_globalconfig(configMap):
 	if 'remove_unoperate_file' in configMap:
 		v = configMap['remove_unoperate_file']
 		if ( isinstance(v, bool) and (False == v) ) or
-				( ((isinstance(v, str) or isinstance(v, unicode)) and (len(v) > 1)) and (v[0:1] in ('n', 'N', 'F', 'f',)) ) or
+				( ((isinstance(v, str) or isinstance(v, unicode)) and (len(v) > 1)) and (str(v[0:1]) in ('n', 'N', 'F', 'f',)) ) or
 				( isinstance(v, int) and (0 == v) ):
 			remove_unoperate_file = False
 	# }}} set 'remove_unoperate_file'
