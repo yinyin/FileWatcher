@@ -2,6 +2,7 @@
 
 """ 定時掃描變更檔案系統監視模組 """
 
+import os
 import time
 import copy
 import threading
