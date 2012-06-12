@@ -2,6 +2,7 @@
 
 """ 設定檔相關物件與共用函式定義 """
 
+import os
 import re
 import time
 import yaml
@@ -229,7 +230,7 @@ def _load_config_impl_globalconfig(configMap):
 	meta_db_path = None
 	meta_reserve_day_duplicatecheck = 3
 	meta_reserve_day_missingcheck = 2
-	if ('meta' in configMap) and isinstance():
+	if ('meta' in configMap) and isinstance(configMap['meta'], dict):
 		meta_cfg = configMap['meta']
 		meta_db_path = meta_cfg['db_path']
 		
