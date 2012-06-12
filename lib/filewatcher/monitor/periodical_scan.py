@@ -4,9 +4,11 @@
 
 import time
 import copy
+import threading
 
 from filewatcher import componentprop
 from filewatcher import filewatchconfig
+from filewatcher import metadatum
 
 
 _cached_module_prop_instance = componentprop.MonitorProp('periodical-scan')

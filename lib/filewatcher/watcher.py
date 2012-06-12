@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import time
+import signal
 import syslog
 import shutil
 
