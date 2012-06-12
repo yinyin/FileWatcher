@@ -207,9 +207,10 @@ def _load_config_impl_globalconfig(configMap):
 	recursive_watch = False
 	if 'recursive_watch' in configMap:
 		v = configMap['recursive_watch']
-		if ( isinstance(v, bool) and (True == v) ) or
+		if (	( isinstance(v, bool) and (True == v) ) or
 				( ((isinstance(v, str) or isinstance(v, unicode)) and (len(v) > 1)) and (str(v[0:1]) in ('y', 'Y', 't', 'T',)) ) or
-				( isinstance(v, int) and (0 != v) ):
+				( isinstance(v, int) and (0 != v) )
+			):
 			recursive_watch = True
 	# }}} set 'recursive_watch'
 	
@@ -217,9 +218,10 @@ def _load_config_impl_globalconfig(configMap):
 	remove_unoperate_file = True
 	if 'remove_unoperate_file' in configMap:
 		v = configMap['remove_unoperate_file']
-		if ( isinstance(v, bool) and (False == v) ) or
+		if (	( isinstance(v, bool) and (False == v) ) or
 				( ((isinstance(v, str) or isinstance(v, unicode)) and (len(v) > 1)) and (str(v[0:1]) in ('n', 'N', 'F', 'f',)) ) or
-				( isinstance(v, int) and (0 == v) ):
+				( isinstance(v, int) and (0 == v) )
+			):
 			remove_unoperate_file = False
 	# }}} set 'remove_unoperate_file'
 
@@ -337,9 +339,10 @@ def _load_config_impl_watchentries(watch_entries_cfg, operation_deliver, operati
 			do_dupcheck = False
 			if 'duplicate_check' in entry_cfg:
 				v = entry_cfg['duplicate_check']
-				if ( isinstance(v, bool) and (True == v) )
-					or ( isinstance(v, str) and (v in ('Y', 'y', '1', 'Yes', 'YES', 'yes', 'T', 'True',)) )
-					or ( isinstance(v, unicode) and (v in (u'Y', u'y', u'1', u'Yes', u'YES', u'yes', u'T', u'True',)) ):
+				if (	( isinstance(v, bool) and (True == v) )
+						or ( isinstance(v, str) and (v in ('Y', 'y', '1', 'Yes', 'YES', 'yes', 'T', 'True',)) )
+						or ( isinstance(v, unicode) and (v in (u'Y', u'y', u'1', u'Yes', u'YES', u'yes', u'T', u'True',)) )
+					):
 					do_dupcheck = True
 			
 			content_check_label = None
@@ -352,9 +355,10 @@ def _load_config_impl_watchentries(watch_entries_cfg, operation_deliver, operati
 			process_as_uniqname = True
 			if 'process_as_uniqname' in entry_cfg:
 				v = entry_cfg['process_as_uniqname']
-				if ( isinstance(v, bool) and (True == v) )
-					or ( isinstance(v, str) and (v in ('Y', 'y', '1', 'Yes', 'YES', 'yes', 'T', 'True',)) )
-					or ( isinstance(v, unicode) and (v in (u'Y', u'y', u'1', u'Yes', u'YES', u'yes', u'T', u'True',)) ):
+				if (	( isinstance(v, bool) and (True == v) )
+						or ( isinstance(v, str) and (v in ('Y', 'y', '1', 'Yes', 'YES', 'yes', 'T', 'True',)) )
+						or ( isinstance(v, unicode) and (v in (u'Y', u'y', u'1', u'Yes', u'YES', u'yes', u'T', u'True',)) )
+					):
 					process_as_uniqname = True
 			
 			ignorance_checker = None
