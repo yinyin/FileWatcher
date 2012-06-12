@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 
+import os
 import time
 import signal
 import syslog
 import shutil
+import re
 
 from filewatcher import filewatchconfig
 from filewatcher import metadatum
@@ -12,6 +14,9 @@ from filewatcher import metadatum
 FEVENT_NEW = 1
 FEVENT_MODIFIED = 2
 FEVENT_DELETED = 4
+
+
+FW_APP_NAME = 'filewatcher'
 
 
 class OperationExecRef:
@@ -238,6 +243,17 @@ def get_watcherengine(config_filepath, enabled_modules=None):
 	return w_engine
 # ### def _active_watcherengine
 
+def _prepare_log(config_filepath):
+	logging_name = os.path.basename(config_filepath)
+	logging_name = re.match("^([a-zA-Z0-9_-]+)", logging_name)
+	
+	if logging_name is None:
+		logging_name = FW_APP_NAME
+	else:
+		logging_name = ''.join((FW_APP_NAME, '.', logging_name.group(1),))
+	
+	syslog.openlog(logging_name, syslog.LOG_PID, syslog.LOG_DAEMON)
+# ### def _prepare_log
 
 __arrived_signal_handled = False	# 已收到的訊號是否已經處理完成
 __terminate_signal_recived = False	# 收到程式停止訊號
@@ -260,6 +276,7 @@ def run_watcher(config_filepath, enabled_modules=None):
 		enabled_modules=None - 要啓用的模組串列
 	"""
 
+	_prepare_log(config_filepath)
 	w_engine = get_watcherengine(config_filepath, enabled_modules)
 	if w_engine is None:
 		print "ERR: cannot load watcher engine."
