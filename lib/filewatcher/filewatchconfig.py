@@ -83,7 +83,9 @@ class MonitorEntry:
 		"""
 
 		self.file_regex = re.compile(file_regex)
-		self.path_regex = re.compile(path_regex)
+		self.path_regex = None
+		if path_regex is not None:
+			self.path_regex = re.compile(path_regex)
 		self.operation_update = operation_update
 		self.operation_remove = operation_remove
 
@@ -245,7 +247,7 @@ def _load_config_impl_globalconfig(configMap):
 				meta_reserve_day_missingcheck = 1
 	# }}} load meta storage options
 	
-	global_config = WatcherConfiguration(target_directory, recursive_watch, meta_db_path, meta_reserve_day_duplicatecheck, meta_reserve_day_missingcheck)
+	global_config = WatcherConfiguration(target_directory, recursive_watch, remove_unoperate_file, meta_db_path, meta_reserve_day_duplicatecheck, meta_reserve_day_missingcheck)
 	
 	return global_config
 # ### _load_config_impl_globalconfig
@@ -332,10 +334,10 @@ def _load_config_impl_watchentries(watch_entries_cfg, operation_deliver, operati
 	
 	for entry_cfg in watch_entries_cfg:
 		try:
-			file_regex = re.compile(entry_cfg['file_regex'])
+			file_regex = str(entry_cfg['file_regex'])
 			path_regex = None
-			if 'path_regex' in entry:
-				path_regex = re.compile(entry_cfg['path_regex'])
+			if 'path_regex' in entry_cfg:
+				path_regex = str(entry_cfg['path_regex'])
 			
 			do_dupcheck = False
 			if 'duplicate_check' in entry_cfg:
@@ -369,19 +371,19 @@ def _load_config_impl_watchentries(watch_entries_cfg, operation_deliver, operati
 			# {{{ load operations
 			operation_update = None
 			if 'update-operation' in entry_cfg:
-				operation_update = _load_config_impl_watchentries_updateoprn(entry_cfg['update-operation'], operation_deliver, operation_schedule_seq, operation_run_newupdate_seq)
+				operation_update = _load_config_impl_watchentries_operation(entry_cfg['update-operation'], operation_deliver, operation_schedule_seq, operation_run_newupdate_seq)
 			elif 'operation' in entry_cfg:
-				operation_update = _load_config_impl_watchentries_updateoprn(entry_cfg['operation'], operation_deliver, operation_schedule_seq, operation_run_newupdate_seq)
+				operation_update = _load_config_impl_watchentries_operation(entry_cfg['operation'], operation_deliver, operation_schedule_seq, operation_run_newupdate_seq)
 			
 			operation_remove = None
 			if 'remove-operation' in entry_cfg:
-				operation_remove = _load_config_impl_watchentries_updateoprn(entry_cfg['remove-operation'], operation_deliver, operation_schedule_seq, operation_run_dismiss_seq)
+				operation_remove = _load_config_impl_watchentries_operation(entry_cfg['remove-operation'], operation_deliver, operation_schedule_seq, operation_run_dismiss_seq)
 			# }}} load operations
 			
 			entryobj = MonitorEntry(file_regex, path_regex, do_dupcheck, operation_update, operation_remove, process_as_uniqname, content_check_label, ignorance_checker)
 			watch_entries.append(entryobj)
 		except:
-			print "Failed on loading watch entry: %r" % (entry,)
+			print "Failed on loading watch entry: %r" % (entry_cfg,)
 			raise
 	
 	return watch_entries
