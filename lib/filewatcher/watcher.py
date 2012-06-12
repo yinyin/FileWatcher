@@ -93,7 +93,6 @@ class WatcherEngine:
 			for opr_ent in opr_block:
 				if (current_filepath is not None) and (os.path.exists(current_filepath)):
 					entry_log_queue = []
-					block_log_queue.append("(operator=%s)"%(
 					altered_filepath = opr_ent.opmodule.perform_operation(current_filepath, filename, opr_ent.argv, oprexec_ref, entry_log_queue)
 					current_filepath = altered_filepath
 					
