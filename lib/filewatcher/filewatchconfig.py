@@ -445,7 +445,7 @@ def get_module_interfaces(mods):
 	回傳值:
 		含有以下元素的 tuple: (config_readers, monitor_implement, operation_deliver, operation_schedule_seq, operation_run_seq)
 		config_readers - 以設定檔段落名稱為 key 工作模組為 value 的字典
-		monitor_implement - 含有監視工作模組的串列
+		monitor_implement - 以監視工作模組名稱 (同設定檔段落名稱) 作為 key 監視模組為 value 的字典
 		operation_deliver - 以作業名稱為 key 監視工作模組為 value 的字典
 		operation_schedule_seq - 排定作業塊先後順序用的作業名稱串列
 		operation_run_newupdate_seq - 排定作業執行先後順序用的作業名稱串列 (針對檔案新增或修改事件)
@@ -454,7 +454,7 @@ def get_module_interfaces(mods):
 
 	config_readers = {}
 
-	monitor_implement = []
+	monitor_implement = {}
 
 	operation_deliver = {}
 	operation_schedule_seq = []
@@ -469,7 +469,8 @@ def get_module_interfaces(mods):
 
 		# {{{ if module is monitor module
 		if prop.isMonitor:
-			monitor_implement.append(m)
+			monitor_name = prop.module_name
+			monitor_implement[monitor_name] = m
 		# }}} if module is monitor module
 
 		# {{{ if module is operator module
