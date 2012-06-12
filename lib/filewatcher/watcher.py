@@ -87,7 +87,29 @@ class WatcherEngine:
 	# ### def deactivate
 
 	def __perform_operation(self, filename, folderpath, orig_path, target_path, operate_list, oprexec_ref):
-		pass	# TODO
+		for opr_block in operate_list:
+			current_filepath = target_path
+			block_log_queue = []
+			for opr_ent in opr_block:
+				if (current_filepath is not None) and (os.path.exists(current_filepath)):
+					entry_log_queue = []
+					block_log_queue.append("(operator=%s)"%(
+					altered_filepath = opr_ent.opmodule.perform_operation(current_filepath, filename, opr_ent.argv, oprexec_ref, entry_log_queue)
+					current_filepath = altered_filepath
+					
+					if len(entry_log_queue) > 0:
+						for logline in entry_log_queue:
+							block_log_queue.append("%s: %s"%(opr_ent.opname, logline,))
+					else:
+						block_log_queue.append("%s: (Log=N/A)"%(opr_ent.opname,))
+				else:
+					break
+			if len(block_log_queue) > 0:
+				logmsg = '; '.join(block_log_queue)
+			else:
+				logmsg = 'no operations proceed'
+			syslog.syslog(syslog.LOG_INFO, "operation on [%s]: %s." % (orig_path, logmsg,))
+		
 	# ### def __perform_operation
 
 	def discover_file_change(self, filename, folderpath, event_type=0):
