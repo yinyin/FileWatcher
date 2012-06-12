@@ -252,12 +252,13 @@ def _load_config_impl_globalconfig(configMap):
 	return global_config
 # ### _load_config_impl_globalconfig
 
-def _load_config_impl_moduleconfig(configMap, config_reader):
+def _load_config_impl_moduleconfig(configMap, config_reader, global_config):
 	""" 讀取模組設定資訊
 	
 	參數:
 		configMap - 設定值資訊字典
 		config_reader - 以「模組的設定名稱」為鍵「模組實體」為值的 dict 結構體
+		global_config - 全域設定值
 	回傳值:
 		(無)
 	"""
@@ -413,7 +414,7 @@ def load_config(config_filename, config_reader, operation_deliver, operation_sch
 		return None
 	
 	# Module Configuration
-	_load_config_impl_moduleconfig(configMap, config_reader)
+	_load_config_impl_moduleconfig(configMap, config_reader, global_config)
 	# }}} configure modules
 	
 	# Watch Entries
