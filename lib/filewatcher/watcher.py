@@ -118,7 +118,10 @@ class WatcherEngine:
 					continue
 						
 			# {{{ do ignorance check
-			# TODO
+			if w_case.ignorance_checker is not None:
+				if w_case.ignorance_checker(folderpath, filename):
+					syslog.syslog(syslog.LOG_INFO, "Ignored: [%s]"%(orig_path,))
+					return
 			# }}} do ignorance check
 			
 			cancel_operation = None
