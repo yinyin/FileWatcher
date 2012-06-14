@@ -105,7 +105,7 @@ class ProcessDriver:
 	# ### def invoke_periodical_call
 	
 	def loop(self):
-		asyncloop_count = int(periodical_call_interval/30)
+		asyncloop_count = int(self.periodical_call_interval/30)
 		if asyncloop_count < 1:
 			asyncloop_count = 1
 		
@@ -113,7 +113,7 @@ class ProcessDriver:
 			if self.async_map:
 				asyncore.loop(30, map=self.async_map, count=asyncloop_count)
 			else:
-				time.sleep(periodical_call_interval)
+				time.sleep(self.periodical_call_interval)
 			self.invoke_periodical_call()
 	# ### def loop
 # ### class ProcessDriver
@@ -200,7 +200,7 @@ class WatcherEngine:
 		"""
 
 		self.last_file_event_tstamp = time.time()	# 更新事件時戳
-		print "discoveried: %r" % (filename, folderpath, event_type,)
+		print "discoveried - filename=%r, folder=%r, event-type=%r" % (filename, folderpath, event_type,)
 
 		orig_path = os.path.join(folderpath, filename)
 		if not os.path.isfile(orig_path):
