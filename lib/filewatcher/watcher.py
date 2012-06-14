@@ -48,6 +48,77 @@ class OperationExecRef:
 # ### class OperationExecRef
 
 
+class PeriodicalCall:
+	def __init__(self, call_object, call_arg=None, min_interval=10):
+		self.call_object = call_object
+		self.call_arg = call_arg
+		
+		self.min_interval = min_interval
+		if self.min_interval < 10:
+			self.min_interval = 10
+		
+		self.actual_min_interval = self.min_interval
+		self.last_invoke_tstamp = 0;
+	# ### def __init__
+	
+	def __recaculate_invoke_interval(self, last_time_consumption):
+		new_interval = int( ((self.actual_min_interval * 98) + last_time_consumption + self.min_interval) / 100 )
+		if new_interval > self.min_interval:
+			self.actual_min_interval = new_interval
+	# ### def __recaculate_invoke_interval
+	
+	def invoke(self):
+		current_tstamp = time.time()
+		
+		if (current_tstamp - self.last_invoke_tstamp) > self.actual_min_interval:
+			self.call_object(self.call_arg)
+			
+			callcomplete_tstamp = time.time()
+			self.__recaculate_invoke_interval(callcomplete_tstamp - current_tstamp)
+			
+			self.last_invoke_tstamp = current_tstamp
+			
+			return True
+		else:
+			return False
+	# ### def invoke
+# ### class PeriodicalCall
+
+class ProcessDriver:
+	def __init__(self, periodical_call_interval=180):
+		self.API_VERSION = 1
+		
+		self.async_map = {}
+		
+		self.periodical_call_interval = periodical_call_interval
+		self.periodical_call = []
+	# ### def __init__
+	
+	def append_periodical_call(self, call_object, call_arg=None, min_interval=10):
+		pcall_obj = PeriodicalCall(call_object, call_arg, min_interval)
+		self.periodical_call.append(pcall_obj)
+	# ### def append_periodical_call
+	
+	def invoke_periodical_call(self):
+		for pcall_obj in self.periodical_call:
+			pcall_obj.invoke()
+	# ### def invoke_periodical_call
+	
+	def loop(self):
+		asyncloop_count = int(periodical_call_interval/30)
+		if asyncloop_count < 1:
+			asyncloop_count = 1
+		
+		while False == _check_terminate_signal():
+			if self.async_map:
+				asyncore.loop(30, map=self.async_map, count=asyncloop_count)
+			else:
+				time.sleep(periodical_call_interval)
+			self.invoke_periodical_call()
+	# ### def loop
+# ### class ProcessDriver
+
+
 class WatcherEngine:
 	""" 被 monitor 呼叫，派送事件給 operator 執行 """
 
@@ -68,6 +139,8 @@ class WatcherEngine:
 		
 		self.last_file_event_tstamp = time.time()
 		self.serialcounter = 1 + (self.last_file_event_tstamp % 1024)
+		
+		self.process_driver = ProcessDriver()
 	# ### def __init__
 	
 	def activate(self):
@@ -127,6 +200,7 @@ class WatcherEngine:
 		"""
 
 		self.last_file_event_tstamp = time.time()	# 更新事件時戳
+		print "discoveried: %r" % (filename, folderpath, event_type,)
 
 		orig_path = os.path.join(folderpath, filename)
 		if not os.path.isfile(orig_path):
@@ -267,6 +341,36 @@ def _termination_signal_handler(signum, frame):
 	__arrived_signal_handled = True
 # ### def _term_signal_handler
 
+def _regist_terminate_signal():
+	signal.signal(signal.SIGINT, _termination_signal_handler)
+	#signal.signal(signal.SIGTERM, _termination_signal_handler)
+# ### def _regist_terminate_signal
+
+def _check_terminate_signal():
+	global __terminate_signal_recived, __arrived_signal_handled
+	
+	if True == __terminate_signal_recived:
+		while (False == __arrived_signal_handled):
+			time.sleep(1)
+		return True
+	else:
+		return False
+# ### def _check_terminate_signal
+
+def _wait_terminate_signal():
+	global __terminate_signal_recived, __arrived_signal_handled
+	
+	# {{{ loop for signal handling
+	while (False == __terminate_signal_recived):
+		__arrived_signal_handled = False
+		signal.pause()
+
+		while (False == __arrived_signal_handled):
+			time.sleep(1)
+	# }}} loop for signal handling
+# ### def _wait_terminate_signal
+
+
 def run_watcher(config_filepath, enabled_modules=None):
 	""" 啟動 watcher
 	執行前應先對 filewatchconfig 模組註冊好 ignorance checker
@@ -283,19 +387,8 @@ def run_watcher(config_filepath, enabled_modules=None):
 		return
 	w_engine.activate()
 
-	# {{{ loop for signal handling
-	global __terminate_signal_recived, __arrived_signal_handled
-
-	signal.signal(signal.SIGINT, _termination_signal_handler)
-	#signal.signal(signal.SIGTERM, _termination_signal_handler)
-
-	while (False == __terminate_signal_recived):
-		__arrived_signal_handled = False
-		signal.pause()
-
-		while (False == __arrived_signal_handled):
-			time.sleep(1)
-	# }}} loop for signal handling
+	_regist_terminate_signal()
+	w_engine.process_driver.loop()
 # ### def startup_watcher
 
 
