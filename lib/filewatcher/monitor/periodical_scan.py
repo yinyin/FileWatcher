@@ -10,6 +10,7 @@ import threading
 from filewatcher import componentprop
 from filewatcher import filewatchconfig
 from filewatcher import metadatum
+from filewatcher import watcher
 
 
 _cached_module_prop_instance = componentprop.MonitorProp('periodical-scan')
@@ -100,9 +101,6 @@ def monitor_configure(config, metastorage):
 # ### def monitor_configure
 
 
-__wk_thread = None
-__wk_do_scan = False
-
 def __scan_walk_impl(last_scan_time, watcher_instance, target_directory, recursive_watch):
 	
 	current_tstamp = int(time.time())
@@ -151,52 +149,46 @@ def __scan_walk_impl(last_scan_time, watcher_instance, target_directory, recursi
 			watcher_instance.discover_file_change(df[1], df[0], watcher.FEVENT_DELETED)
 # ### def __scan_walk_impl
 
-def __scan_worker(watcher_instance, target_directory, recursive_watch):
-	global __wk_do_scan
+_last_scan_tstamp = 0
 
-	last_scan = 0
+def __scan_worker(arg):
+	global _last_scan_tstamp
+	
+	watcher_instance, target_directory, recursive_watch, = arg
+	
 	min_scan_interval = __scan_interval / 4
 
-	while __wk_do_scan:
-		perform_scan = False
-		current_tstamp = time.time()
-		tz_offset = metadatum.get_tzoffset()
+	perform_scan = False
+	current_tstamp = time.time()
+	tz_offset = metadatum.get_tzoffset()
 
-		# {{{ check if need do scan
-		if (current_tstamp - last_scan) > min_scan_interval:	# must > min_scan_interval to avoid over-scan
-			if True == __cron_interval_style:
-				if (current_tstamp - (current_tstamp % __scan_interval)) > last_scan:
-					perform_scan = True
-			else:
-				if (current_tstamp - watcher_instance.last_file_event_tstamp) > __scan_interval:
-					perform_scan = True
-		
-		if perform_scan:
-			# {{{ see if in blackout time
-			local_tstamp = current_tstamp - tz_offset
-			for b in __blackout_time:
-				if b.isIn(local_tstamp):
-					perform_scan = False
-			# }}} see if in blackout time
-		# }}} check if need do scan
-
-		if perform_scan:
-			# initial ignorance checker for this round
-			if _ignorance_checker is not None:
-				_ignorance_checker(None, None)
-
-			__scan_walk_impl(last_scan, watcher_instance, target_directory, recursive_watch)	# do scan
-
-			current_tstamp = time.time()
-			last_scan = current_tstamp
-
-		# {{{ compute sleep seconds for next invoke
-		sleep_tick = min_scan_interval
+	# {{{ check if need do scan
+	if (current_tstamp - _last_scan_tstamp) > min_scan_interval:	# must > min_scan_interval to avoid over-scan
 		if True == __cron_interval_style:
-			sleep_tick = (10 + ( (1 + math.floor(current_tstamp / __scan_interval)) * __scan_interval ) ) - current_tstamp
-		# }}} compute sleep seconds for next invoke
+			if (current_tstamp - (current_tstamp % __scan_interval)) > _last_scan_tstamp:
+				perform_scan = True
+		else:
+			if (current_tstamp - watcher_instance.last_file_event_tstamp) > __scan_interval:
+				perform_scan = True
+	
+	if perform_scan:
+		# {{{ see if in blackout time
+		local_tstamp = current_tstamp - tz_offset
+		for b in __blackout_time:
+			if b.isIn(local_tstamp):
+				perform_scan = False
+		# }}} see if in blackout time
+	# }}} check if need do scan
 
-		time.sleep(sleep_tick)
+	if perform_scan:
+		# initial ignorance checker for this round
+		if _ignorance_checker is not None:
+			_ignorance_checker(None, None)
+
+		__scan_walk_impl(_last_scan_tstamp, watcher_instance, target_directory, recursive_watch)	# do scan
+
+		current_tstamp = time.time()
+		_last_scan_tstamp = current_tstamp
 # ### def __scan_worker
 
 
@@ -212,12 +204,7 @@ def monitor_start(watcher_instance, target_directory, recursive_watch=False):
 		(無)
 	"""
 
-	global __wk_do_scan, __wk_thread
-
-	__wk_do_scan = True
-	
-	__wk_thread = threading.Thread(target=__scan_worker, args=(watcher_instance, target_directory, recursive_watch,))
-	__wk_thread.start()
+	watcher_instance.process_driver.append_periodical_call(__scan_worker, (watcher_instance, target_directory, recursive_watch,), (__scan_interval/4))
 # ### def monitor_start
 
 
@@ -230,10 +217,7 @@ def monitor_stop():
 		(無)
 	"""
 
-	global __wk_do_scan, __wk_thread, __scan_interval
-
-	__wk_do_scan = False
-	__wk_thread.join(__scan_interval*2+60)
+	pass
 # ### def monitor_stop
 
 
