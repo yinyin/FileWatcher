@@ -121,7 +121,7 @@ def __scan_walk_impl(last_scan_time, watcher_instance, target_directory, recursi
 			# {{{ 檢查是否是有變動的檔案
 			if _metastorage is not None:	# 採用資料庫檢查
 				r = _metastorage.test_file_presence_and_checkin(relpath, f, finfo.st_size, finfo.st_mtime, current_tstamp)
-				if metadatum.FPCHK_STABLE == r:
+				if (metadatum.FPCHK_NEW == r) or (metadatum.FPCHK_MODIFIED == r):
 					is_updated_file = True
 			elif finfo.st_mtime > last_scan_time:	# 採用時間比對
 				is_updated_file = True
@@ -180,6 +180,7 @@ def __scan_worker(arg):
 		# }}} see if in blackout time
 	# }}} check if need do scan
 
+	#print "perform_scan: %r" % (perform_scan,)
 	if perform_scan:
 		# initial ignorance checker for this round
 		if _ignorance_checker is not None:
