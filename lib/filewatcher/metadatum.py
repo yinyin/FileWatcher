@@ -9,9 +9,9 @@ import time
 
 
 
-__MSTORAGE_FRESH = 0
-__MSTORAGE_EXISTED = 1
-__MSTORAGE_MODIFING = 2
+_MSTORAGE_FRESH = 0
+_MSTORAGE_EXISTED = 1
+_MSTORAGE_MODIFING = 2
 
 FPCHK_FRESH = 0
 FPCHK_NEW = 1
@@ -149,7 +149,7 @@ class MetaStorage:
 		c.execute("""SELECT file_size, file_mtime, report_status FROM PresenceCheck WHERE (file_relfolder = ?) AND (file_name = ?)""", (file_relfolder, file_name,))
 		r = c.fetchone()
 		if r is None:
-			c.execute("""INSERT INTO PresenceCheck(file_relfolder, file_name, file_size, file_mtime, report_status, first_contact_time, last_contact_time) VALUES(?, ?, ?, ?, ?, ?, ?)""", (file_relfolder, file_name, file_size, file_mtime, __MSTORAGE_FRESH, tstamp, tstamp,))
+			c.execute("""INSERT INTO PresenceCheck(file_relfolder, file_name, file_size, file_mtime, report_status, first_contact_time, last_contact_time) VALUES(?, ?, ?, ?, ?, ?, ?)""", (file_relfolder, file_name, file_size, file_mtime, _MSTORAGE_FRESH, tstamp, tstamp,))
 			result_status = FPCHK_FRESH
 		else:
 			meta_size = int(r[0])
@@ -160,24 +160,24 @@ class MetaStorage:
 
 			# {{{ caculate new rep-status and return message
 			if (meta_size == file_size) and (meta_mtime == file_mtime):
-				if __MSTORAGE_FRESH == meta_repstatus:
-					new_repstatus = __MSTORAGE_EXISTED
+				if _MSTORAGE_FRESH == meta_repstatus:
+					new_repstatus = _MSTORAGE_EXISTED
 					result_status = FPCHK_NEW
-				elif __MSTORAGE_EXISTED == meta_repstatus:
-					new_repstatus = __MSTORAGE_EXISTED	# no change
+				elif _MSTORAGE_EXISTED == meta_repstatus:
+					new_repstatus = _MSTORAGE_EXISTED	# no change
 					result_status = FPCHK_STABLE
-				elif __MSTORAGE_MODIFING == meta_repstatus:
-					new_repstatus = __MSTORAGE_EXISTED
+				elif _MSTORAGE_MODIFING == meta_repstatus:
+					new_repstatus = _MSTORAGE_EXISTED
 					result_status = FPCHK_MODIFIED
 			else:
-				if __MSTORAGE_FRESH == meta_repstatus:
-					new_repstatus = __MSTORAGE_FRESH	# no change
+				if _MSTORAGE_FRESH == meta_repstatus:
+					new_repstatus = _MSTORAGE_FRESH	# no change
 					result_status = FPCHK_FRESH
-				elif __MSTORAGE_EXISTED == meta_repstatus:
-					new_repstatus = __MSTORAGE_MODIFING
+				elif _MSTORAGE_EXISTED == meta_repstatus:
+					new_repstatus = _MSTORAGE_MODIFING
 					result_status = FPCHK_MODIFING
-				elif __MSTORAGE_MODIFING == meta_repstatus:
-					new_repstatus = __MSTORAGE_MODIFING	# no change
+				elif _MSTORAGE_MODIFING == meta_repstatus:
+					new_repstatus = _MSTORAGE_MODIFING	# no change
 					result_status = FPCHK_MODIFING
 			# }}} caculate new rep-status and return message
 
