@@ -46,7 +46,7 @@ def read_operation_argv(argv):
 		吻合工作模組需求的設定物件
 	"""
 
-	if os.path.isdir(argv):
+	if os.path.isdir(argv) and os.access(argv, os.W_OK):
 		return os.path.abspath(argv)
 	return None
 # ### read_operation_argv
@@ -67,10 +67,12 @@ def perform_operation(current_filepath, orig_filename, argv, oprexec_ref, logque
 
 	target_path = os.path.join(argv, orig_filename)
 	try:
+		if (True == os.access(target_path, os.F_OK)) and (False == os.access(target_path, os.W_OK)):
+			os.unlink(target_path)
 		shutil.copyfile(current_filepath, target_path)
 		logqueue.append("copy %r to %r success" % (current_filepath, target_path,))
 		return target_path
-	except Except as e:
+	except (shutil.Error, IOError) as e:
 		logqueue.append("copy %r to %r failed: %r" % (current_filepath, target_path, e,))
 		return None
 # ### def perform_operation
