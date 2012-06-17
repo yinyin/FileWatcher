@@ -6,6 +6,7 @@ import signal
 import syslog
 import shutil
 import re
+import asyncore
 
 from filewatcher import filewatchconfig
 from filewatcher import metadatum
@@ -290,9 +291,20 @@ class WatcherEngine:
 
 def get_builtin_modules():
 	""" 取得內建的模組 (以 tuple 形式傳回) """
+	
+	m = []
+	
 	from filewatcher.monitor import periodical_scan
 	from filewatcher.operator import coderunner
-	return (periodical_scan, coderunner,)
+	
+	m.extend((periodical_scan, coderunner,))
+	
+	osuname = os.uname()
+	if 'Linux' == osuname[0]:
+		from filewatcher.monitor import linux_inotify
+		m.append(linux_inotify)
+	
+	return m
 # ### def get_builtin_modules
 
 
