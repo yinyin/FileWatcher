@@ -12,7 +12,7 @@ from filewatcher import componentprop
 
 _runner_queue = {}
 
-_task_queue_assignment = re.compile("""^\(([A-Za-z0-9-]+)\)\s*([^\s].+)$""")
+_task_queue_assignment = re.compile('^\(([A-Za-z0-9-]+)\)\s*([^\s].+)$')
 _command_carry_variable_macro = re.compile('^%([A-Za-z0-9_-]+)%$')
 
 
@@ -70,9 +70,8 @@ class _RunnerQueue:
 		回傳值: (無)
 		"""
 
-		print "coderunner: start runner %r with queue size %d." % (self.queue_label, self.max_running_process,)
-
 		if (self.max_running_process is None) or (self.max_running_process < 1):
+			syslog.syslog(syslog.LOG_INFO, "allocated static runner (Q=%r)"%(self.queue_label,))
 			return	# 最大執行行程為空值的話則不啟動任何 worker
 
 		workers_q = []
@@ -83,6 +82,7 @@ class _RunnerQueue:
 			workers_q.append(wk)
 			print "created worker named %r (ID=%d/Q=%r)" % (wk.name, idx, self.queue_label,)
 		self.workers = workers_q
+		syslog.syslog(syslog.LOG_INFO, "allocated threaded runner (Q=%r, size=%d)"%(self.queue_label, self.max_running_process,))
 	# ### def start_workers
 
 	def run_program(self, cmdlist, filepath, carry_variable, logqueue):
@@ -201,6 +201,12 @@ def operator_configure(config, metastorage):
 
 	# setup default queue
 	_runner_queue['_DEFAULT'] = _RunnerQueue('_DEFAULT', default_max_running_process)
+
+
+	# {{{ start workers
+	for runner in _runner_queue.itervalues():
+		runner.start_workers()
+	# }}} start workers
 # ### def operator_configure
 
 
