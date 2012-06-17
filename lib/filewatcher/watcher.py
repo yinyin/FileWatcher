@@ -106,16 +106,19 @@ class ProcessDriver:
 	# ### def invoke_periodical_call
 
 	def loop(self):
-		asyncloop_count = int(self.periodical_call_interval/30)
-		if asyncloop_count < 1:
-			asyncloop_count = 1
+		last_periodical_call_tstamp = 0
 
 		while False == _check_terminate_signal():
 			if self.async_map:
-				asyncore.loop(30, map=self.async_map, count=asyncloop_count)
+				asyncore.loop(20, map=self.async_map, count=1)
 			else:
 				time.sleep(self.periodical_call_interval)
-			self.invoke_periodical_call()
+
+			current_tstamp = time.time()
+			if (current_tstamp - last_periodical_call_tstamp) > self.periodical_call_interval:
+				last_periodical_call_tstamp = current_tstamp
+				self.invoke_periodical_call()
+			print "process-loop: %d/%d" % (last_periodical_call_tstamp, current_tstamp,)
 	# ### def loop
 # ### class ProcessDriver
 
@@ -150,9 +153,9 @@ class WatcherEngine:
 
 		for monitor_name, monitor_m in self.monitor_implement.iteritems():
 			monitor_m.monitor_start(self, self.global_config.target_directory, self.global_config.recursive_watch)
-			syslog.syslog(syslog.LOG_INFO, "start monitor [%s]" % (monitor_name,))
+			syslog.syslog(syslog.LOG_INFO, "started monitor module [%s]" % (monitor_name,))
 
-		syslog.syslog(syslog.LOG_INFO, "Activated FileWatcher.")
+		syslog.syslog(syslog.LOG_NOTICE, "Activated FileWatcher::%r."%(FW_APP_NAME,))
 	# ### def activate
 
 	def deactivate(self):
@@ -167,7 +170,7 @@ class WatcherEngine:
 			operator_name.operator_stop()
 			syslog.syslog(syslog.LOG_INFO, "stopped operator [%s]" % (operator_name,))
 
-		syslog.syslog(syslog.LOG_INFO, "Deactivated FileWatcher.")
+		syslog.syslog(syslog.LOG_NOTICE, "Deactivated FileWatcher::%r."%(FW_APP_NAME,))
 	# ### def deactivate
 
 	def __perform_operation(self, filename, folderpath, orig_path, target_path, operate_list, oprexec_ref):
@@ -246,7 +249,7 @@ class WatcherEngine:
 			if FEVENT_DELETED != event_type:
 				# {{{ build unique name if required
 				if w_case.process_as_uniqname:
-					uniq_name = "%s-Wr%04d" % (filename, self.serialcounter,)
+					uniq_name = "%s-FiWr%04d" % (filename, self.serialcounter,)
 					target_path = os.path.join(self.global_config.target_directory, folderpath, uniq_name)
 					try:
 						shutil.move(orig_path, target_path)
@@ -276,20 +279,20 @@ class WatcherEngine:
 			if cancel_operation is not None:
 				if True == self.global_config.remove_unoperate_file:
 					os.unlink(target_path)
-				syslog.syslog(syslog.LOG_INFO, "Cancel: [%s] reason=%s."%(orig_path, cancel_operation,))
-				print "Cancel: [%s] reason=%s."%(orig_path, cancel_operation,)
+				syslog.syslog(syslog.LOG_INFO, "cancel: [%s] reason=%s."%(orig_path, cancel_operation,))
+				#print "Cancel: [%s] reason=%s."%(orig_path, cancel_operation,)
 				return
 			# }}} cancel operation
 
 			oprexec_ref = OperationExecRef(mobj_file, mobj_path, f_sig, event_type)
 			if (FEVENT_NEW == event_type) or (FEVENT_MODIFIED == event_type):
-				print "running update route"
+				#print "running update route"
 				self.__perform_operation(filename, folderpath, orig_path, target_path, w_case.operation_update, oprexec_ref)
 			elif FEVENT_DELETED == event_type:
-				print "running remove route"
+				#print "running remove route"
 				self.__perform_operation(filename, folderpath, orig_path, target_path, w_case.operation_remove, oprexec_ref)
 			else:
-				print "running NoOP route"
+				#print "running NoOP route"
 				syslog.syslog(syslog.LOG_INFO, "NoOP: [%s] unknown event type (%r)."%(orig_path, event_type,))
 
 			return
@@ -337,19 +340,17 @@ def get_watcherengine(config_filepath, enabled_modules=None):
 
 	# prepare module profile
 	config_readers, monitor_implement, operation_deliver, operation_schedule_seq, operation_run_newupdate_seq, operation_run_dismiss_seq, = filewatchconfig.get_module_interfaces(enabled_modules)
-	logmsg = "Loaded modules: modify=%r, dismiss=%r" % (operation_run_newupdate_seq, operation_run_dismiss_seq,)
-	syslog.syslog(syslog.LOG_INFO, logmsg)
-	print logmsg
+	syslog.syslog(syslog.LOG_INFO, "loaded modules: modify=%r, dismiss=%r" % (operation_run_newupdate_seq, operation_run_dismiss_seq,))
 
 	# load config
 	cfg = filewatchconfig.load_config(config_filepath, config_readers, operation_deliver, operation_schedule_seq, operation_run_newupdate_seq, operation_run_dismiss_seq)
 	if cfg is None:
-		print "ERR: cannot load global configuration"
+		syslog.syslog(syslog.LOG_ERR, "cannot load global configuration.")
 		return None
 	global_config, watch_entries, = cfg
 
 	w_engine = WatcherEngine(global_config, watch_entries, monitor_implement, operation_deliver)
-	syslog.syslog(syslog.LOG_INFO, "Loaded engine with configuration: [%r]" % (config_filepath,))
+	syslog.syslog(syslog.LOG_INFO, "loaded engine with configuration: [%r]" % (config_filepath,))
 
 	return w_engine
 # ### def _active_watcherengine
@@ -363,7 +364,7 @@ def _prepare_log(config_filepath):
 	else:
 		logging_name = ''.join((FW_APP_NAME, '.', logging_name.group(1),))
 
-	syslog.openlog(logging_name, syslog.LOG_PID, syslog.LOG_DAEMON)
+	syslog.openlog(logging_name, syslog.LOG_PID|syslog.LOG_PERROR, syslog.LOG_DAEMON)
 # ### def _prepare_log
 
 __arrived_signal_handled = False	# 已收到的訊號是否已經處理完成
@@ -425,10 +426,12 @@ def run_watcher(config_filepath, enabled_modules=None):
 		print "ERR: cannot load watcher engine."
 		return
 	w_engine.activate()
+	syslog.syslog(syslog.LOG_NOTICE, "FileWatcher::%s Started." % (FW_APP_NAME,))
 	print "FileWatcher: engine activated."
 
 	_regist_terminate_signal()
 	w_engine.process_driver.loop()
+	syslog.syslog(syslog.LOG_NOTICE, "FileWatcher::%s Stopped." % (FW_APP_NAME,))
 # ### def startup_watcher
 
 
