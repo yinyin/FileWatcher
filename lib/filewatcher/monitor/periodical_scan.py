@@ -128,7 +128,7 @@ def __scan_walk_impl(last_scan_time, watcher_instance, target_directory, recursi
 			# }}} 檢查是否是有變動的檔案
 			
 			if is_updated_file:
-				watcher_instance.discover_file_change(f, os.path.join(target_directory, relpath), watcher.FEVENT_MODIFIED)
+				watcher_instance.discover_file_change(f, relpath, watcher.FEVENT_MODIFIED)
 		# }}} 掃描所有檔案是否有變動
 
 		# {{{ 檢查是否要掃描子資料夾
@@ -146,7 +146,7 @@ def __scan_walk_impl(last_scan_time, watcher_instance, target_directory, recursi
 	if _metastorage is not None:
 		df = _metastorage.test_file_deletion_and_purge(current_tstamp-1)
 		for dfinfo in df:
-			watcher_instance.discover_file_change(df[1], os.path.join(target_directory, df[0]), watcher.FEVENT_DELETED)
+			watcher_instance.discover_file_change(df[1], df[0], watcher.FEVENT_DELETED)
 # ### def __scan_walk_impl
 
 _last_scan_tstamp = 0
