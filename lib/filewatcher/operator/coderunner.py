@@ -13,7 +13,7 @@ from filewatcher import componentprop
 _runner_queue = {}
 
 _task_queue_assignment = re.compile("""^\(([A-Za-z0-9-]+)\)\s*([^\s].+)$""")
-_command_carry_variable_macro = re.compile("""^%(A-Za-z0-9_-]+)%$""")
+_command_carry_variable_macro = re.compile('^%([A-Za-z0-9_-]+)%$')
 
 
 def _subprocess_worker(worker_qlabel, worker_id, q):
@@ -70,6 +70,8 @@ class _RunnerQueue:
 		回傳值: (無)
 		"""
 
+		print "coderunner: start runner %r with queue size %d." % (self.queue_label, self.max_running_process,)
+
 		if (self.max_running_process is None) or (self.max_running_process < 1):
 			return	# 最大執行行程為空值的話則不啟動任何 worker
 
@@ -97,6 +99,7 @@ class _RunnerQueue:
 
 		progpath = cmdlist[0]
 		if (progpath is None) or (not os.path.isfile(progpath)) or (not os.access(progpath, os.X_OK)) or (filepath is None):
+			logqueue.append("not run any program (cmd=%r, file-path=%r)"%(cmdlist, filepath,))
 			return
 
 		# {{{ build command
@@ -107,7 +110,7 @@ class _RunnerQueue:
 				cmd.append(v)
 			else:
 				varname = m.group(1)
-				if """%FILENAME%""" == varname:	# resolve built-in macro: FILENAME
+				if """FILENAME""" == varname:	# resolve built-in macro: FILENAME
 					cmd.append(filepath)
 				elif varname in carry_variable:	# resolve macro from carry_variable
 					cmd.append(carry_variable[varname])
@@ -225,7 +228,7 @@ def read_operation_argv(argv):
 
 	# {{{ attempt to build command list as list
 	if isinstance(cmd_argv, str) or isinstance(cmd_argv, unicode):
-		result_cmd = [argv, """%FILENAME%"""]
+		result_cmd = [cmd_argv, """%FILENAME%"""]
 	elif isinstance(cmd_argv, tuple) or isinstance(cmd_argv, list):
 		have_filename_macro = False
 		result_cmd = []
@@ -249,7 +252,7 @@ def read_operation_argv(argv):
 				que_argv = q
 	# }}} check if use queue short-cut -syntax
 
-	return _RunConfiguration(que_argv, cmd_argv)
+	return _RunConfiguration(que_argv, result_cmd)
 # ### read_operation_argv
 
 
