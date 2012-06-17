@@ -205,6 +205,7 @@ def _load_config_impl_globalconfig(configMap):
 	target_directory = configMap['target_directory']
 	if (target_directory is None) or (False == os.path.isdir(target_directory)):
 		return None
+	target_directory = os.path.abspath(target_directory)
 	
 	# {{{ set 'recursive_watch'
 	recursive_watch = False
