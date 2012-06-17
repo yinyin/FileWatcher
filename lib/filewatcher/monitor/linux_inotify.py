@@ -3,6 +3,9 @@
 """ 檔案系統監視模組 """
 
 
+import os
+import pyinotify
+
 from filewatcher import componentprop
 from filewatcher import filewatchconfig
 
