@@ -8,6 +8,7 @@ import pyinotify
 
 from filewatcher import componentprop
 from filewatcher import filewatchconfig
+from filewatcher import watcher
 
 
 def _get_relpath(path, start):
@@ -107,7 +108,7 @@ class _EventHandler(pyinotify.ProcessEvent):
 	def trigger_operation(self, pathname, watcher_eventcode):
 		path, name, = os.path.split(os.path.abspath(pathname))
 		relpath = _get_relpath(path, self.target_directory)
-		self.watcher_instance.discover_file_change(name, relpath, watcher_eventcode))
+		self.watcher_instance.discover_file_change(name, relpath, watcher_eventcode)
 	# ### def perform_modified_operation
 	
 	def process_IN_CLOSE_WRITE(self, event):
@@ -144,8 +145,8 @@ def monitor_start(watcher_instance, target_directory, recursive_watch=False):
 	mask = pyinotify.IN_DELETE | pyinotify.IN_CLOSE_WRITE | pyinotify.IN_MOVED_TO	# watched events
 	handler = _EventHandler(watcher_instance, target_directory)
 	
-	notifier = pyinotify.AsyncNotifier(_wm, handler, channel_map=watcher_instance.process_driver.async_map)
-	wdd = _wm.add_watch(target_directory, mask, rec=True)
+	notifier = pyinotify.AsyncNotifier(_watchmanager, handler, channel_map=watcher_instance.process_driver.async_map)
+	wdd = _watchmanager.add_watch(target_directory, mask, rec=True)
 # ### def monitor_start
 
 
