@@ -167,7 +167,7 @@ class WatcherEngine:
 			syslog.syslog(syslog.LOG_INFO, "stopped monitor [%s]" % (monitor_name,))
 
 		for operator_name, operator_m in self.operation_deliver.iteritems():
-			operator_name.operator_stop()
+			operator_m.operator_stop()
 			syslog.syslog(syslog.LOG_INFO, "stopped operator [%s]" % (operator_name,))
 
 		syslog.syslog(syslog.LOG_NOTICE, "Deactivated FileWatcher::%r."%(FW_APP_NAME,))
@@ -431,6 +431,7 @@ def run_watcher(config_filepath, enabled_modules=None):
 
 	_regist_terminate_signal()
 	w_engine.process_driver.loop()
+	w_engine.deactivate()
 	syslog.syslog(syslog.LOG_NOTICE, "FileWatcher::%s Stopped." % (FW_APP_NAME,))
 # ### def startup_watcher
 
