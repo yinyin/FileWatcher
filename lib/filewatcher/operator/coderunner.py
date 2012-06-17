@@ -265,12 +265,14 @@ def perform_operation(current_filepath, orig_filename, argv, oprexec_ref, logque
 	回傳值:
 		經過操作後的檔案絕對路徑
 	"""
-	
+
 	r_queue = argv.queue
 	if r_queue not in _runner_queue:
 		logqueue.append("queue not found: %r"%(r_queue,))
 		r_queue = '_DEFAULT'
-	
+	if r_queue not in _runner_queue:
+		print "ERR: coderunner - missing queue: queue=%r, _runner_queue=%r" % (r_queue, _runner_queue,)
+
 	_runner_queue[r_queue].run_program(argv.command, current_filepath, oprexec_ref.carry_variable, logqueue)
 
 	return current_filepath
