@@ -1,5 +1,7 @@
 *.pyc
 
 .DS_Store
+test.py
+etc/test.yaml
 etc/sample-aux.yaml
 
