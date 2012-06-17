@@ -195,14 +195,18 @@ class WatcherEngine:
 		
 		參數:
 			filename - 檔案名稱
-			folderpath - 檔案夾路徑
+			folderpath - 檔案夾路徑 (相對於 target_directory 路徑)
 			event_type - 事件型別 (FEVENT_NEW, FEVENT_MODIFIED, FEVENT_DELETED)
 		"""
+
+		if (True == self.global_config.recursive_watch) and ('' != folderpath):
+			print "ignored - recursive watch disabled. (folderpath = %r)" % (folderpath,)
+			return
 
 		self.last_file_event_tstamp = time.time()	# 更新事件時戳
 		print "discoveried - filename=%r, folder=%r, event-type=%r" % (filename, folderpath, event_type,)
 
-		orig_path = os.path.join(folderpath, filename)
+		orig_path = os.path.join(self.global_config.target_directory, folderpath, filename)
 		if not os.path.isfile(orig_path):
 			return
 
@@ -231,7 +235,7 @@ class WatcherEngine:
 			# {{{ build unique name if required
 			if w_case.process_as_uniqname:
 				uniq_name = "%s-Wr%04d" % (filename, self.serialcounter,)
-				target_path = os.path.join(folderpath, uniq_name)
+				target_path = os.path.join(self.global_config.target_directory, folderpath, uniq_name)
 				try:
 					shutil.move(orig_path, target_path)
 				except shutil.Error as e:
