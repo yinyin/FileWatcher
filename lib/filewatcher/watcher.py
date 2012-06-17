@@ -232,33 +232,37 @@ class WatcherEngine:
 			cancel_operation = None
 			self.serialcounter = (self.serialcounter + 1) % 1024
 			
-			# {{{ build unique name if required
-			if w_case.process_as_uniqname:
-				uniq_name = "%s-Wr%04d" % (filename, self.serialcounter,)
-				target_path = os.path.join(self.global_config.target_directory, folderpath, uniq_name)
-				try:
-					shutil.move(orig_path, target_path)
-				except shutil.Error as e:
-					print "Failed on file renaming for meta operation: %s" % (e,)
-					target_path = orig_path
-					# we will do meta operations anyway.
-			else:
-				target_path = orig_path
-			# }}} build unique name if required
-			
-			# {{{ checking if proceed
 			f_sig = None
-			if (self.metadb is not None) and (True == w_case.do_dupcheck):
-				check_label = filename
-				life_retain = False
-				if w_case.content_check_label is not None:
-					check_label = w_case.content_check_label
-					life_retain = True
+
+			# {{{ pre-operation for file new or update
+			if FEVENT_DELETED != event_type:
+				# {{{ build unique name if required
+				if w_case.process_as_uniqname:
+					uniq_name = "%s-Wr%04d" % (filename, self.serialcounter,)
+					target_path = os.path.join(self.global_config.target_directory, folderpath, uniq_name)
+					try:
+						shutil.move(orig_path, target_path)
+					except shutil.Error as e:
+						print "Failed on file renaming for meta operation: %s" % (e,)
+						target_path = orig_path
+						# we will do meta operations anyway.
+				else:
+					target_path = orig_path
+				# }}} build unique name if required
 				
-				f_sig = metadatum.compute_file_signature(target_path)
-				if True == self.metadb.test_file_duplication_and_checkin(check_label, f_sig, life_retain):
-					cancel_operation = 'duplicate file (meta sig-check)'
-			# }}} checking if proceed
+				# {{{ checking if proceed
+				if (self.metadb is not None) and (True == w_case.do_dupcheck):
+					check_label = filename
+					life_retain = False
+					if w_case.content_check_label is not None:
+						check_label = w_case.content_check_label
+						life_retain = True
+					
+					f_sig = metadatum.compute_file_signature(target_path)
+					if True == self.metadb.test_file_duplication_and_checkin(check_label, f_sig, life_retain):
+						cancel_operation = 'duplicate file (meta sig-check)'
+				# }}} checking if proceed
+			# }}} pre-operation for file new or update
 			
 			# {{{ cancel operation
 			if cancel_operation is not None:
