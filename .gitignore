@@ -3,5 +3,6 @@
 .DS_Store
 .project
 .pydevproject
+.settings
 etc/sample-aux.yaml
 
