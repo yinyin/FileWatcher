@@ -71,6 +71,9 @@ def set_revise_period(revise_period=None):
 				_revise_period = 200
 		except:
 			_revise_period = None
+		return
+
+	_revise_period = None
 # ### def set_revise_period
 
 
