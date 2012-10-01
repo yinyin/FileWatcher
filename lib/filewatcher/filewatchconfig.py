@@ -222,7 +222,7 @@ def _load_config_impl_globalconfig(configMap):
 	if 'remove_unoperate_file' in configMap:
 		v = configMap['remove_unoperate_file']
 		if (	( isinstance(v, bool) and (False == v) ) or
-				( ((isinstance(v, str) or isinstance(v, unicode)) and (len(v) > 1)) and (str(v[0:1]) in ('n', 'N', 'F', 'f',)) ) or
+				((isinstance(v, (str, unicode,)) and (len(v) > 1)) and (str(v[0:1]) in ('n', 'N', 'F', 'f',))) or
 				( isinstance(v, int) and (0 == v) )
 			):
 			remove_unoperate_file = False
@@ -344,8 +344,7 @@ def _load_config_impl_watchentries(watch_entries_cfg, operation_deliver, operati
 			if 'duplicate_check' in entry_cfg:
 				v = entry_cfg['duplicate_check']
 				if (	( isinstance(v, bool) and (True == v) )
-						or ( isinstance(v, str) and (v in ('Y', 'y', '1', 'Yes', 'YES', 'yes', 'T', 'True',)) )
-						or ( isinstance(v, unicode) and (v in (u'Y', u'y', u'1', u'Yes', u'YES', u'yes', u'T', u'True',)) )
+						or (isinstance(v, (str, unicode,)) and (str(v) in ('Y', 'y', '1', 'Yes', 'YES', 'yes', 'T', 'True',)))
 					):
 					do_dupcheck = True
 			
@@ -360,10 +359,11 @@ def _load_config_impl_watchentries(watch_entries_cfg, operation_deliver, operati
 			if 'process_as_uniqname' in entry_cfg:
 				v = entry_cfg['process_as_uniqname']
 				if (	( isinstance(v, bool) and (True == v) )
-						or ( isinstance(v, str) and (v in ('Y', 'y', '1', 'Yes', 'YES', 'yes', 'T', 'True',)) )
-						or ( isinstance(v, unicode) and (v in (u'Y', u'y', u'1', u'Yes', u'YES', u'yes', u'T', u'True',)) )
+						or (isinstance(v, (str, unicode,)) and (str(v) in ('Y', 'y', '1', 'Yes', 'YES', 'yes', 'T', 'True',)))
 					):
 					process_as_uniqname = True
+				else:
+					process_as_uniqname = False
 			
 			ignorance_checker = None
 			if 'ignorance-checker' in entry_cfg:
