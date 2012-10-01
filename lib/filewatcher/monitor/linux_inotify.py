@@ -11,6 +11,7 @@ from filewatcher import filewatchconfig
 from filewatcher import watcher
 
 
+
 def _get_relpath(path, start):
 	relpath = os.path.relpath(path, start)
 	if '.' == relpath:
@@ -48,6 +49,58 @@ def set_ignorance_checker(checker):
 	else:
 		_ignorance_checker = checker
 # ### def set_ignorance_checker
+
+
+_revise_period = None
+def set_revise_period(revise_period=None):
+	""" 設定重新檢驗週期
+	在給定的週期時間後會重新執行 ignorance-checker 檢查所有註冊的 watcher 是不是要取消
+	
+	參數:
+		revise_period=None - 要設定的週期時間，單位是秒
+	"""
+	global _revise_period
+
+	if _ignorance_checker is None:
+		return
+
+	if revise_period is not None:
+		try:
+			_revise_period = int(revise_period)
+			if _revise_period < 200:
+				_revise_period = 200
+		except:
+			_revise_period = None
+# ### def set_revise_period
+
+
+def _periodical_folder_reviser(arg):
+	if _ignorance_checker is None:
+		return
+
+	target_directory = arg
+
+	for root, dirs, files in os.walk(target_directory):
+		#print "linux_inotify: revising %r" % (root)
+		no_further_scan = []
+		wd_to_drop = []
+
+		for d in dirs:
+			dirpath = os.path.abspath(os.path.join(root, d))
+			wd = _watchmanager.get_wd(dirpath)
+			if wd is None:
+				no_further_scan.append(d)
+				#print "linux_inotify: no further revise %r" % (d,)
+			elif _ignorance_checker(dirpath, None):
+				wd_to_drop.append(wd)
+				no_further_scan.append(d)
+				print "linux_inotify: removing %r (wd=%r)" % (d, wd,)
+
+		for d in no_further_scan:
+			dirs.remove(d)
+		if len(wd_to_drop) > 0:
+			_watchmanager.rm_watch(wd_to_drop, rec=True)
+# ### def _periodical_folder_reviser
 
 
 class _ExcludeFilter:
@@ -94,6 +147,8 @@ def monitor_configure(config, metastorage):
 	# 載入 ignorance checker
 	if 'ignorance-checker' in config:
 		set_ignorance_checker(str(config['ignorance-checker']))
+
+	set_revise_period(config.get('revise-interval'))
 # ### def monitor_configure
 
 
@@ -141,12 +196,20 @@ def monitor_start(watcher_instance, target_directory, recursive_watch=False):
 
 	global _watchmanager
 
-	_watchmanager = pyinotify.WatchManager(exclude_filter=_ExcludeFilter(target_directory, recursive_watch))
 	mask = pyinotify.IN_DELETE | pyinotify.IN_CLOSE_WRITE | pyinotify.IN_MOVED_TO	# watched events
+
+	if _watchmanager is not None:
+		print "ERR: linux_inotify: designed to watch one directory only, unspecified behavior with multiple monitor_start."
+
+	_watchmanager = pyinotify.WatchManager(exclude_filter=_ExcludeFilter(target_directory, recursive_watch))
 	handler = _EventHandler(watcher_instance, target_directory)
-	
 	notifier = pyinotify.AsyncNotifier(_watchmanager, handler, channel_map=watcher_instance.process_driver.async_map)
-	wdd = _watchmanager.add_watch(target_directory, mask, rec=True)
+
+	auto_add_folder = False if (not recursive_watch) else True
+	wdd = _watchmanager.add_watch(target_directory, mask, rec=True, auto_add=auto_add_folder)
+
+	if _revise_period is not None:
+		watcher_instance.process_driver.append_periodical_call(_periodical_folder_reviser, None, _revise_period)
 # ### def monitor_start
 
 
