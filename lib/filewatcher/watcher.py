@@ -210,7 +210,7 @@ class WatcherEngine:
 			event_type - 事件型別 (FEVENT_NEW, FEVENT_MODIFIED, FEVENT_DELETED)
 		"""
 
-		if (True == self.global_config.recursive_watch) and ('' != folderpath):
+		if (False == self.global_config.recursive_watch) and ('' != folderpath):
 			print "ignored - recursive watch disabled. (folderpath = %r)" % (folderpath,)
 			return
 
