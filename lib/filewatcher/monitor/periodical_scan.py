@@ -5,7 +5,7 @@
 import os
 import time
 import copy
-import threading
+import syslog
 
 from filewatcher import componentprop
 from filewatcher import filewatchconfig
@@ -31,12 +31,12 @@ def get_module_prop():
 _ignorance_checker = None
 def set_ignorance_checker(checker):
 	""" 設定忽略路徑與檔案檢查器
-	
+
 	參數:
 		checker - 進行路徑與檔案名稱檢查的函式，函數原型: (relpath=None, filename=None) 回傳 True 表要忽略所檢查的項目
 	"""
 	global _ignorance_checker
-	
+
 	if isinstance(checker, str):
 		_ignorance_checker = filewatchconfig.lookup_ignorance_checker(checker)
 	else:
@@ -94,30 +94,32 @@ def monitor_configure(config, metastorage):
 			except:
 				pass
 	# }}} 將不掃描時間讀入
-	
+
 	# 載入 ignorance checker
 	if 'ignorance-checker' in config:
 		set_ignorance_checker(str(config['ignorance-checker']))
+
+	syslog.syslog(syslog.LOG_INFO, "periodical_scan configurated (scan_interval=%d/c:%r)." % (__scan_interval, __cron_interval_style,))
 # ### def monitor_configure
 
 
 def __scan_walk_impl(last_scan_time, watcher_instance, target_directory, recursive_watch):
-	
+
 	current_tstamp = int(time.time())
-	
+
 	for root, dirs, files in os.walk(target_directory):
 		# 製造相對路徑
 		relpath = os.path.relpath(root, target_directory)
 		if '.' == relpath:
 			relpath = ''
-		
+
 		# {{{ 掃描所有檔案是否有變動
 		for f in files:
 			fpath = os.path.join(root, f)
 			finfo = os.stat(fpath)
-			
+
 			is_updated_file = False
-			
+
 			# {{{ 檢查是否是有變動的檔案
 			if _metastorage is not None:	# 採用資料庫檢查
 				r = _metastorage.test_file_presence_and_checkin(relpath, f, finfo.st_size, finfo.st_mtime, current_tstamp)
@@ -126,7 +128,7 @@ def __scan_walk_impl(last_scan_time, watcher_instance, target_directory, recursi
 			elif finfo.st_mtime > last_scan_time:	# 採用時間比對
 				is_updated_file = True
 			# }}} 檢查是否是有變動的檔案
-			
+
 			if is_updated_file:
 				watcher_instance.discover_file_change(f, relpath, watcher.FEVENT_MODIFIED)
 		# }}} 掃描所有檔案是否有變動
@@ -153,9 +155,9 @@ _last_scan_tstamp = 0
 
 def __scan_worker(arg):
 	global _last_scan_tstamp
-	
+
 	watcher_instance, target_directory, recursive_watch, = arg
-	
+
 	min_scan_interval = __scan_interval / 4
 
 	perform_scan = False
@@ -170,7 +172,7 @@ def __scan_worker(arg):
 		else:
 			if (current_tstamp - watcher_instance.last_file_event_tstamp) > __scan_interval:
 				perform_scan = True
-	
+
 	if perform_scan:
 		# {{{ see if in blackout time
 		local_tstamp = current_tstamp - tz_offset
@@ -180,7 +182,7 @@ def __scan_worker(arg):
 		# }}} see if in blackout time
 	# }}} check if need do scan
 
-	#print "perform_scan: %r" % (perform_scan,)
+	print "periodical_scan: perform_scan=%r" % (perform_scan,)
 	if perform_scan:
 		# initial ignorance checker for this round
 		if _ignorance_checker is not None:

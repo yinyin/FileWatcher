@@ -5,21 +5,19 @@ meta:
   db_path: /opt/filewatcher/var/vizdatamon_meta.sqlite
   duplicate_check_reserve_day: 3
 
-monitor:
-  periodical-scan:
-    scan_interval: 1200
-    use_meta: True
+periodical-scan:
+  scan_interval: 1200
+  use_meta: True
 
-operator:
-  program_runner:
-    max_running_program: 8
-    # OR (notice: avoid conflict with default queue name "_DEFAULT")
-    queue:
-      - max_running_program: 3
-      - name: LOWPRI
-        max_running_program: 8
-      - name: HIGHPRI
-        max_running_program: 16
+program_runner:
+  max_running_program: 8
+  # OR (notice: avoid conflict with default queue name "_DEFAULT")
+  queue:
+    - max_running_program: 3
+    - name: LOWPRI
+      max_running_program: 8
+    - name: HIGHPRI
+      max_running_program: 16
 
 
 watching_entries:
