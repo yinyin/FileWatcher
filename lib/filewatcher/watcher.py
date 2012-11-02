@@ -54,9 +54,7 @@ class PeriodicalCall:
 		self.call_object = call_object
 		self.call_arg = call_arg
 
-		self.min_interval = min_interval
-		if self.min_interval < 10:
-			self.min_interval = 10
+		self.min_interval = max(min_interval, 10)
 
 		self.actual_min_interval = self.min_interval
 		self.last_invoke_tstamp = 0;
