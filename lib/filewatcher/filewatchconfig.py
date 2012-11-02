@@ -83,9 +83,7 @@ class MonitorEntry:
 		"""
 
 		self.file_regex = re.compile(file_regex)
-		self.path_regex = None
-		if path_regex is not None:
-			self.path_regex = re.compile(path_regex)
+		self.path_regex = None if (path_regex is None) else re.compile(path_regex)
 		self.operation_update = operation_update
 		self.operation_remove = operation_remove
 
@@ -138,12 +136,12 @@ class TimeInterval:
 		"""
 
 		# {{{ convert format into seconds from mid-night
-		if isinstance(t, int) or isinstance(t, long) or isinstance(t, float):
+		if isinstance(t, (int, long, float,)):
 			if t >= 86400:
 				t = t % 86400
 		elif isinstance(t, time.timedelta):
 			t = t.total_seconds()
-		elif isinstance(t, time.datetime) or isinstance(t, time.time):
+		elif isinstance(t, (time.datetime, time.time)):
 			t = time.timedelta(seconds=t.second, minutes=t.minute, hours=t.hour)
 			t = t.total_seconds()
 		# }}} convert format into seconds from mid-night
@@ -184,11 +182,32 @@ def lookup_ignorance_checker(name):
 	if len(name) < 1:
 		return None
 
-	if name in _ignorance_checker_list:
-		return _ignorance_checker_list[name]
-	return None
+	return _ignorance_checker_list.get(name, None)
 # ### def lookup_ignorance_checker
 
+
+
+def _convert_cfg_bool(v, default_value=False):
+	""" 將傳入的參數值轉換為 bool
+	參數:
+		v - 要轉換的參數值
+	回傳值:
+		True 或 False
+	"""
+
+	if isinstance(v, bool):
+		return v
+	elif isinstance(v, (int, long, float,)):
+		if 0 == int(v):
+			return True
+		else:
+			return False
+	elif isinstance(v, (str, unicode,)):
+		if len(v) > 1:
+			return (True if (str(v[0]) in ('y', 'Y', 't', 'T',)) else False)
+
+	return default_value
+# ### def _convert_cfg_bool
 
 
 def _load_config_impl_globalconfig(configMap):
@@ -207,27 +226,11 @@ def _load_config_impl_globalconfig(configMap):
 		return None
 	target_directory = os.path.abspath(target_directory)
 
-	# {{{ set 'recursive_watch'
-	recursive_watch = False
-	if 'recursive_watch' in configMap:
-		v = configMap['recursive_watch']
-		if (	( isinstance(v, bool) and (True == v) ) or
-				( ((isinstance(v, str) or isinstance(v, unicode)) and (len(v) > 1)) and (str(v[0:1]) in ('y', 'Y', 't', 'T',)) ) or
-				( isinstance(v, int) and (0 != v) )
-			):
-			recursive_watch = True
-	# }}} set 'recursive_watch'
+	# set 'recursive_watch'
+	recursive_watch = _convert_cfg_bool(configMap.get('recursive_watch', False), default_value=False)
 
-	# {{{ set 'remove_unoperate_file'
-	remove_unoperate_file = True
-	if 'remove_unoperate_file' in configMap:
-		v = configMap['remove_unoperate_file']
-		if (	( isinstance(v, bool) and (False == v) ) or
-				((isinstance(v, (str, unicode,)) and (len(v) > 1)) and (str(v[0:1]) in ('n', 'N', 'F', 'f',))) or
-				( isinstance(v, int) and (0 == v) )
-			):
-			remove_unoperate_file = False
-	# }}} set 'remove_unoperate_file'
+	# set 'remove_unoperate_file'
+	remove_unoperate_file = _convert_cfg_bool(configMap.get('remove_unoperate_file', True), default_value=True)
 
 	# {{{ load meta storage options
 	meta_db_path = None
@@ -237,15 +240,8 @@ def _load_config_impl_globalconfig(configMap):
 		meta_cfg = configMap['meta']
 		meta_db_path = meta_cfg['db_path']
 
-		if 'duplicate_check_reserve_day' in meta_cfg:
-			meta_reserve_day_duplicatecheck = int(meta_cfg['duplicate_check_reserve_day'])
-			if meta_reserve_day_duplicatecheck < 1:
-				meta_reserve_day_duplicatecheck = 1
-
-		if 'missing_detect_reserve_day' in meta_cfg:
-			meta_reserve_day_missingcheck = int(meta_cfg['missing_detect_reserve_day'])
-			if meta_reserve_day_missingcheck < 1:
-				meta_reserve_day_missingcheck = 1
+		meta_reserve_day_duplicatecheck = max(int(meta_cfg.get('duplicate_check_reserve_day', 3)), 1)
+		meta_reserve_day_missingcheck = max(int(meta_cfg.get('missing_detect_reserve_day', 2)), 1)
 	# }}} load meta storage options
 
 	global_config = WatcherConfiguration(target_directory, recursive_watch, remove_unoperate_file, meta_db_path, meta_reserve_day_duplicatecheck, meta_reserve_day_missingcheck)
@@ -343,13 +339,7 @@ def _load_config_impl_watchentries(watch_entries_cfg, operation_deliver, operati
 			if 'path_regex' in entry_cfg:
 				path_regex = str(entry_cfg['path_regex'])
 
-			do_dupcheck = False
-			if 'duplicate_check' in entry_cfg:
-				v = entry_cfg['duplicate_check']
-				if (	( isinstance(v, bool) and (True == v) )
-						or (isinstance(v, (str, unicode,)) and (str(v) in ('Y', 'y', '1', 'Yes', 'YES', 'yes', 'T', 'True',)))
-					):
-					do_dupcheck = True
+			do_dupcheck = _convert_cfg_bool(entry_cfg.get('duplicate_check', False), defaule_value=False)
 
 			content_check_label = None
 			if (True == do_dupcheck) and ('duplicate_content_check_label' in entry_cfg):
@@ -358,15 +348,7 @@ def _load_config_impl_watchentries(watch_entries_cfg, operation_deliver, operati
 				if len(v) > 0:
 					content_check_label = v
 
-			process_as_uniqname = True
-			if 'process_as_uniqname' in entry_cfg:
-				v = entry_cfg['process_as_uniqname']
-				if (	( isinstance(v, bool) and (True == v) )
-						or (isinstance(v, (str, unicode,)) and (str(v) in ('Y', 'y', '1', 'Yes', 'YES', 'yes', 'T', 'True',)))
-					):
-					process_as_uniqname = True
-				else:
-					process_as_uniqname = False
+			process_as_uniqname = _convert_cfg_bool(entry_cfg.get('process_as_uniqname', True), default_value=True)
 
 			ignorance_checker = None
 			if 'ignorance-checker' in entry_cfg:
@@ -421,7 +403,7 @@ def load_config(config_filename, config_reader, operation_deliver, operation_sch
 	# }}} configure modules
 
 	# Watch Entries
-	watch_entries = _load_config_impl_watchentries(configMap['watching_entries'], operation_deliver, operation_schedule_seq, operation_run_newupdate_seq, operation_run_dismiss_seq)
+	watch_entries = _load_config_impl_watchentries(configMap.get('watching_entries', ()), operation_deliver, operation_schedule_seq, operation_run_newupdate_seq, operation_run_dismiss_seq)
 
 	return (global_config, watch_entries,)
 # ### def load_config
