@@ -35,6 +35,13 @@ def get_module_prop():
 # ### def get_module_prop
 
 
+_queue_overflow_event_callback = None
+def set_queue_overflow_callback(callback_func):
+	global _queue_overflow_event_callback
+	_queue_overflow_event_callback = callback_func
+# ### def set_queue_overflow_callback
+
+
 _ignorance_checker = None
 def set_ignorance_checker(checker):
 	""" 設定忽略路徑與檔案檢查器
@@ -183,6 +190,12 @@ class _EventHandler(pyinotify.ProcessEvent):
 		print "inotify::IN_DELETE: %r" % (event.pathname,)
 		self.trigger_operation(event.pathname, watcher.FEVENT_DELETED)
 	# ### def process_IN_DELETE
+
+	def process_IN_Q_OVERFLOW(self, event):
+		print "inotify::IN_Q_OVERFLOW"
+		if _queue_overflow_event_callback is not None:
+			_queue_overflow_event_callback()
+	# ### def process_IN_Q_OVERFLOW
 # ### class EventHandler
 
 _watchmanager = None
@@ -200,6 +213,8 @@ def monitor_start(watcher_instance, target_directory, recursive_watch=False):
 	global _watchmanager
 
 	mask = pyinotify.IN_DELETE | pyinotify.IN_CLOSE_WRITE | pyinotify.IN_MOVED_TO	# watched events
+	if _queue_overflow_event_callback is not None:
+		mask = mask | pyinotify.IN_Q_OVERFLOW
 
 	if _watchmanager is not None:
 		print "ERR: linux_inotify: designed to watch one directory only, unspecified behavior with multiple monitor_start."
