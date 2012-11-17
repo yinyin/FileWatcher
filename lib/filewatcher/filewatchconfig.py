@@ -1,3 +1,4 @@
+
 # -*- coding: utf-8 -*-
 
 """ 設定檔相關物件與共用函式定義 """
@@ -5,6 +6,7 @@
 import os
 import re
 import time
+import datetime
 import yaml
 
 from filewatcher import metadatum
@@ -112,10 +114,10 @@ class TimeInterval:
 		"""
 
 		ts = time.strptime(time_start, "%H:%M")
-		time_start = time.timedelta(minutes=ts.tm_min, hours=ts.tm_hour)
+		time_start = datetime.timedelta(minutes=ts.tm_min, hours=ts.tm_hour)
 
 		ts = time.strptime(time_end, "%H:%M")
-		time_end = time.timedelta(minutes=ts.tm_min, hours=ts.tm_hour)
+		time_end = datetime.timedelta(minutes=ts.tm_min, hours=ts.tm_hour)
 
 		if time_start < time_end:
 			self.time_start = time_start.total_seconds()
@@ -139,10 +141,10 @@ class TimeInterval:
 		if isinstance(t, (int, long, float,)):
 			if t >= 86400:
 				t = t % 86400
-		elif isinstance(t, time.timedelta):
+		elif isinstance(t, datetime.timedelta):
 			t = t.total_seconds()
-		elif isinstance(t, (time.datetime, time.time)):
-			t = time.timedelta(seconds=t.second, minutes=t.minute, hours=t.hour)
+		elif isinstance(t, (datetime.datetime, datetime.time)):
+			t = datetime.timedelta(seconds=t.second, minutes=t.minute, hours=t.hour)
 			t = t.total_seconds()
 		# }}} convert format into seconds from mid-night
 
