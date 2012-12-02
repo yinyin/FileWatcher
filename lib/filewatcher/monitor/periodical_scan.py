@@ -4,7 +4,6 @@
 
 import os
 import time
-import copy
 import syslog
 
 from filewatcher import componentprop
@@ -146,9 +145,9 @@ def __scan_walk_impl(last_scan_time, watcher_instance, target_directory, recursi
 
 	# 產生刪除檔案資料
 	if _metastorage is not None:
-		df = _metastorage.test_file_deletion_and_purge(current_tstamp-1)
+		df = _metastorage.test_file_deletion_and_purge(current_tstamp - 1)
 		for dfinfo in df:
-			watcher_instance.discover_file_change(df[1], df[0], watcher.FEVENT_DELETED)
+			watcher_instance.discover_file_change(dfinfo[1], dfinfo[0], watcher.FEVENT_DELETED)
 # ### def __scan_walk_impl
 
 _last_scan_tstamp = 0
@@ -207,7 +206,7 @@ def monitor_start(watcher_instance, target_directory, recursive_watch=False):
 		(無)
 	"""
 
-	watcher_instance.process_driver.append_periodical_call(__scan_worker, (watcher_instance, target_directory, recursive_watch,), (__scan_interval/4))
+	watcher_instance.process_driver.append_periodical_call(__scan_worker, (watcher_instance, target_directory, recursive_watch,), (__scan_interval / 4))
 # ### def monitor_start
 
 
