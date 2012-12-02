@@ -127,7 +127,7 @@ class TimeInterval:
 			self.time_end = time_start.total_seconds()
 	# ### __init__
 
-	def isIn(t):
+	def isIn(self, t):
 		""" 給定的時戳是否落在這個時間區間之內
 
 		參數:
@@ -220,8 +220,6 @@ def _load_config_impl_globalconfig(configMap):
 	回傳值:
 		WatcherConfiguration 物件
 	"""
-
-	global_config = None
 
 	target_directory = configMap['target_directory']
 	if (target_directory is None) or (False == os.path.isdir(target_directory)):
