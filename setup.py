@@ -9,7 +9,7 @@ from distutils.core import setup
 setup(name='FileWatcher',
 		version='1.00',
 		description='File watching framework',
-		packages=['filewatcher', ],
+		packages=['filewatcher', 'filewatcher.monitor', 'filewatcher.operator', ],
 		package_dir={'': 'lib'},
 		requires=['PyYAML (>=3.09)', ],
 		install_requires=['PyYAML >= 3.09', ],
