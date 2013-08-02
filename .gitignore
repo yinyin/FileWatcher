@@ -4,6 +4,7 @@
 .project
 .pydevproject
 .settings
+runtime
 test.py
 etc/test.yaml
 etc/sample-aux.yaml
