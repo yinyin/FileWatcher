@@ -230,7 +230,7 @@ def _load_config_impl_globalconfig(configMap):
 	recursive_watch = _convert_cfg_bool(configMap.get('recursive_watch', False), default_value=False)
 
 	# set 'remove_unoperate_file'
-	remove_unoperate_file = _convert_cfg_bool(configMap.get('remove_unoperate_file', True), default_value=True)
+	remove_unoperate_file = _convert_cfg_bool(configMap.get('remove_unoperate_file', False), default_value=False)
 
 	# {{{ load meta storage options
 	meta_db_path = None
