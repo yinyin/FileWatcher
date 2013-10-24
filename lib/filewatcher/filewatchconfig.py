@@ -339,7 +339,7 @@ def _load_config_impl_watchentries(watch_entries_cfg, operation_deliver, operati
 			if 'path_regex' in entry_cfg:
 				path_regex = str(entry_cfg['path_regex'])
 
-			do_dupcheck = _convert_cfg_bool(entry_cfg.get('duplicate_check', False), defaule_value=False)
+			do_dupcheck = _convert_cfg_bool(entry_cfg.get('duplicate_check', False), default_value=False)
 
 			content_check_label = None
 			if (True == do_dupcheck) and ('duplicate_content_check_label' in entry_cfg):
