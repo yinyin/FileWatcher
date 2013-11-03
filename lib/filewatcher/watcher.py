@@ -148,7 +148,6 @@ class WatcherEngine:
 	def activate(self):
 		""" 啓動監看模組，開始作業
 		"""
-
 		for monitor_name, monitor_m in self.monitor_implement.iteritems():
 			monitor_m.monitor_start(self, self.global_config.target_directory, self.global_config.recursive_watch)
 			syslog.syslog(syslog.LOG_INFO, "started monitor module [%s]" % (monitor_name,))
@@ -159,7 +158,6 @@ class WatcherEngine:
 	def deactivate(self):
 		""" 停止監看與作業模組，終止作業
 		"""
-
 		for monitor_name, monitor_m in self.monitor_implement.iteritems():
 			monitor_m.monitor_stop()
 			syslog.syslog(syslog.LOG_INFO, "stopped monitor [%s]" % (monitor_name,))
