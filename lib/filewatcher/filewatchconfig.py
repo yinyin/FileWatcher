@@ -286,6 +286,7 @@ def _load_config_impl_watchentries_operation(operation_cfg, operation_deliver, o
 
 	# {{{ 將 operation block 依據 operation_schedule_seq 排序
 	remain_oprcfg = operation_cfg
+	#print ">>> remaiS %r" % (remain_oprcfg,)
 	for opname in operation_schedule_seq:
 		#print ">>> %r" % (opname,)
 		next_remain_oprcfg = []
@@ -298,6 +299,9 @@ def _load_config_impl_watchentries_operation(operation_cfg, operation_deliver, o
 			remain_oprcfg = None
 			break
 		remain_oprcfg = next_remain_oprcfg
+	if remain_oprcfg is not None:
+		ordered_operation_block.extend(remain_oprcfg)
+		remain_oprcfg = None
 	#print ">>> remain %r" % (remain_oprcfg,)
 	# }}} 將 operation block 依據 operation_schedule_seq 排序
 
