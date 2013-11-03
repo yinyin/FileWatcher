@@ -274,7 +274,6 @@ def perform_operation(current_filepath, orig_filename, argv, oprexec_ref, logque
 	回傳值:
 		經過操作後的檔案絕對路徑
 	"""
-
 	r_queue = argv.queue
 	if r_queue not in _runner_queue:
 		logqueue.append("queue not found: %r"%(r_queue,))
