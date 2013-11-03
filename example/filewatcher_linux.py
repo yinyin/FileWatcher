@@ -33,7 +33,7 @@ def _get_watcher_modules():
 
 	linux_inotify.set_revise_period(600)
 	# linux_inotify.set_ignorance_checker(_check_if_ignore)
-	# linux_inotify.inotify_queue_full_callback = _inotify_queue_full
+	# linux_inotify.set_queue_overflow_callback(_inotify_queue_full)
 
 	return (linux_inotify,
 			copier, mover, coderunner,
