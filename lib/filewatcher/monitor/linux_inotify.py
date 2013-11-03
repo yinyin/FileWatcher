@@ -162,6 +162,42 @@ def monitor_configure(config, metastorage):
 # ### def monitor_configure
 
 
+_MTIME_WATCH_FILES = {}
+
+def _trigger_operation(watcher_instance, target_directory, fullpath, watcher_eventcode):
+	_MTIME_WATCH_FILES.pop(fullpath, None)
+	path, name, = os.path.split(fullpath)
+	relpath = _get_relpath(path, target_directory)
+	watcher_instance.discover_file_change(name, relpath, watcher_eventcode)
+# ### def _trigger_operation
+
+def _periodical_watch_files_flush(arg):
+	watcher_instance, target_directory, = arg
+
+	to_remove = []
+	to_update = {}
+	to_trigger = []
+	for fullpath, sig, in _MTIME_WATCH_FILES.iteritems():
+		try:
+			st = os.lstat(fullpath)
+			aux_size, aux_mtime, = sig
+			if (st.st_size == aux_size) and (aux_mtime == st.st_mtime):
+				to_trigger.append(fullpath)
+			else:
+				to_update[fullpath] = (st.st_size, st.st_mtime,)
+		except:
+			to_remove.append(fullpath)
+
+	for fullpath in to_remove:
+		_MTIME_WATCH_FILES.pop(fullpath, None)
+
+	_MTIME_WATCH_FILES.update(to_update)
+
+	for fullpath in to_trigger:
+		_MTIME_WATCH_FILES.pop(fullpath, None)
+		_trigger_operation(watcher_instance, target_directory, fullpath, watcher.FEVENT_MODIFIED)
+# ### def _periodical_watch_files_flush
+
 class _EventHandler(pyinotify.ProcessEvent):
 	def __init__(self, watcher_instance, target_directory):
 		pyinotify.ProcessEvent.__init__(self)
@@ -171,11 +207,26 @@ class _EventHandler(pyinotify.ProcessEvent):
 	# ### def __init__
 
 	def trigger_operation(self, pathname, watcher_eventcode):
-		path, name, = os.path.split(os.path.abspath(pathname))
-		relpath = _get_relpath(path, self.target_directory)
-		self.watcher_instance.discover_file_change(name, relpath, watcher_eventcode)
-	# ### def perform_modified_operation
-	
+		fullpath = os.path.abspath(pathname)
+		_trigger_operation(self.watcher_instance, self.target_directory, fullpath, watcher_eventcode)
+	# ### def trigger_operation
+
+	def process_IN_CREATE(self, event):
+		print "inotify::IN_CREATE: %r" % (event.pathname,)
+		if not event.dir:
+			return
+		relpath = _get_relpath(event.pathname, self.target_directory)
+		if _ignorance_checker(relpath, None):
+			return
+
+		fullpath = os.path.abspath(event.pathname)
+		for n in os.listdir(fullpath):
+			aux = os.path.join(fullpath, n)
+			if os.path.isfile(aux):
+				st = os.lstat(aux)
+				_MTIME_WATCH_FILES[aux] = (st.st_size, st.st_mtime,)
+	# ### def process_IN_CREATE
+
 	def process_IN_CLOSE_WRITE(self, event):
 		print "inotify::IN_CLOSE_WRITE: %r" % (event.pathname,)
 		self.trigger_operation(event.pathname, watcher.FEVENT_MODIFIED)
@@ -212,9 +263,11 @@ def monitor_start(watcher_instance, target_directory, recursive_watch=False):
 
 	global _watchmanager
 
-	mask = pyinotify.IN_DELETE | pyinotify.IN_CLOSE_WRITE | pyinotify.IN_MOVED_TO	# watched events
+	mask = pyinotify.IN_DELETE | pyinotify.IN_CLOSE_WRITE | pyinotify.IN_MOVED_TO	# watched events; @UndefinedVariable
+	if recursive_watch:
+		mask = mask | pyinotify.IN_CREATE	# @UndefinedVariable
 	if _queue_overflow_event_callback is not None:
-		mask = mask | pyinotify.IN_Q_OVERFLOW
+		mask = mask | pyinotify.IN_Q_OVERFLOW	# @UndefinedVariable
 
 	if _watchmanager is not None:
 		print "ERR: linux_inotify: designed to watch one directory only, unspecified behavior with multiple monitor_start."
@@ -228,6 +281,8 @@ def monitor_start(watcher_instance, target_directory, recursive_watch=False):
 
 	if _revise_period is not None:
 		watcher_instance.process_driver.append_periodical_call(_periodical_folder_reviser, target_directory, _revise_period)
+	if recursive_watch:
+		watcher_instance.process_driver.append_periodical_call(_periodical_watch_files_flush, (watcher_instance, target_directory,), 16)
 # ### def monitor_start
 
 
