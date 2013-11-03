@@ -227,7 +227,7 @@ def monitor_start(watcher_instance, target_directory, recursive_watch=False):
 	wdd = _watchmanager.add_watch(target_directory, mask, rec=True, auto_add=auto_add_folder)
 
 	if _revise_period is not None:
-		watcher_instance.process_driver.append_periodical_call(_periodical_folder_reviser, None, _revise_period)
+		watcher_instance.process_driver.append_periodical_call(_periodical_folder_reviser, target_directory, _revise_period)
 # ### def monitor_start
 
 
