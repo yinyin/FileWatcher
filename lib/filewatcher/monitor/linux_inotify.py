@@ -216,7 +216,7 @@ class _EventHandler(pyinotify.ProcessEvent):
 		if not event.dir:
 			return
 		relpath = _get_relpath(event.pathname, self.target_directory)
-		if _ignorance_checker(relpath, None):
+		if (_ignorance_checker is not None) and _ignorance_checker(relpath, None):
 			return
 
 		fullpath = os.path.abspath(event.pathname)
