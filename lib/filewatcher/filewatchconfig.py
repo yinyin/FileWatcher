@@ -379,9 +379,10 @@ def _load_config_impl_watchentries(watch_entries_cfg, operation_deliver, operati
 	return watch_entries
 # ### def _load_config_impl_watchentries
 
-def _load_config_impl_import_external_watchentries(watch_entries, external_files, operation_deliver, operation_schedule_seq, operation_run_newupdate_seq, operation_run_dismiss_seq):
+def _load_config_impl_import_external_watchentries(watch_entries, external_files, base_folder_path, operation_deliver, operation_schedule_seq, operation_run_newupdate_seq, operation_run_dismiss_seq):
 	for external_cfg_file in external_files:
-		fp = open(external_cfg_file, 'r')
+		expanded_external_cfg_path = os.path.join(base_folder_path, external_cfg_file)
+		fp = open(expanded_external_cfg_path, 'r')
 		ext_watchentries_cmap = yaml.load(fp)
 		fp.close()
 		ext_watch_entries = _load_config_impl_watchentries(ext_watchentries_cmap.get('watching_entries', ()), operation_deliver, operation_schedule_seq, operation_run_newupdate_seq, operation_run_dismiss_seq)
@@ -420,7 +421,8 @@ def load_config(config_filename, config_reader, operation_deliver, operation_sch
 				operation_deliver, operation_schedule_seq, operation_run_newupdate_seq, operation_run_dismiss_seq)
 
 	# Import Watch Entries
-	_load_config_impl_import_external_watchentries(watch_entries, configMap.get('import_watching_entries_from', ()),
+	_load_config_impl_import_external_watchentries(watch_entries,
+				configMap.get('import_watching_entries_from', ()), os.path.dirname(config_filename),
 				operation_deliver, operation_schedule_seq, operation_run_newupdate_seq, operation_run_dismiss_seq)
 
 	return (global_config, watch_entries,)
