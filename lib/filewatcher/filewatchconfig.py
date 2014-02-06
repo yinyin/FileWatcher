@@ -379,6 +379,16 @@ def _load_config_impl_watchentries(watch_entries_cfg, operation_deliver, operati
 	return watch_entries
 # ### def _load_config_impl_watchentries
 
+def _load_config_impl_import_external_watchentries(watch_entries, external_files, operation_deliver, operation_schedule_seq, operation_run_newupdate_seq, operation_run_dismiss_seq):
+	for external_cfg_file in external_files:
+		fp = open(external_cfg_file, 'r')
+		ext_watchentries_cmap = yaml.load(fp)
+		fp.close()
+		ext_watch_entries = _load_config_impl_watchentries(ext_watchentries_cmap.get('watching_entries', ()), operation_deliver, operation_schedule_seq, operation_run_newupdate_seq, operation_run_dismiss_seq)
+		if len(ext_watch_entries) > 0:
+			watch_entries.extend(ext_watch_entries)
+# ### def _load_config_impl_import_external_watchentries
+
 def load_config(config_filename, config_reader, operation_deliver, operation_schedule_seq, operation_run_newupdate_seq, operation_run_dismiss_seq):
 	"""" 讀取設定檔內容
 
@@ -404,10 +414,14 @@ def load_config(config_filename, config_reader, operation_deliver, operation_sch
 
 	# Module Configuration
 	_load_config_impl_moduleconfig(configMap, config_reader, global_config)
-	# }}} configure modules
 
 	# Watch Entries
-	watch_entries = _load_config_impl_watchentries(configMap.get('watching_entries', ()), operation_deliver, operation_schedule_seq, operation_run_newupdate_seq, operation_run_dismiss_seq)
+	watch_entries = _load_config_impl_watchentries(configMap.get('watching_entries', ()),
+				operation_deliver, operation_schedule_seq, operation_run_newupdate_seq, operation_run_dismiss_seq)
+
+	# Import Watch Entries
+	_load_config_impl_import_external_watchentries(watch_entries, configMap.get('import_watching_entries_from', ()),
+				operation_deliver, operation_schedule_seq, operation_run_newupdate_seq, operation_run_dismiss_seq)
 
 	return (global_config, watch_entries,)
 # ### def load_config
