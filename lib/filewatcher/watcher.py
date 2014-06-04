@@ -197,8 +197,8 @@ class WatcherEngine:
 			#print "operation on [%s]: %s." % (orig_path, logmsg,)
 	# ### def __perform_operation
 
-	def discover_file_change(self, filename, folderpath, event_type=0):
-		""" 通知監視引擎找到新的檔案
+	def __discover_file_change(self, filename, folderpath, event_type=0):
+		""" (實作部分) 通知監視引擎找到新的檔案
 
 		參數:
 			filename - 檔案名稱
@@ -295,6 +295,20 @@ class WatcherEngine:
 		# }}} scan watch entries
 
 		syslog.syslog(syslog.LOG_INFO, "NoWatchEntryFound: [%s]."%(orig_path,))
+	# ### def __discover_file_change
+
+	def discover_file_change(self, filename, folderpath, event_type=0):
+		""" 通知監視引擎找到新的檔案
+
+		參數:
+			filename - 檔案名稱
+			folderpath - 檔案夾路徑 (相對於 target_directory 路徑)
+			event_type - 事件型別 (FEVENT_NEW, FEVENT_MODIFIED, FEVENT_DELETED)
+		"""
+		try:
+			self.__discover_file_change(filename, folderpath, event_type)
+		except Exception as e:
+			syslog.syslog(syslog.LOG_INFO, "Having Exception on Discover File Change: [%s]." % (e,))
 	# ### def discover_file_change
 # ### class WatcherEngine
 
