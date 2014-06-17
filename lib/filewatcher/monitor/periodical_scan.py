@@ -135,10 +135,13 @@ def __scan_walk_impl(last_scan_time, watcher_instance, target_directory, recursi
 		# {{{ 檢查是否要掃描子資料夾
 		if recursive_watch:
 			if _ignorance_checker is not None:
+				to_drop = []
 				for d in dirs:
 					drel = os.path.join(relpath, d)
 					if _ignorance_checker(drel, None):
-						dirs.remove(d)
+						to_drop.append(d)
+				for d in to_drop:
+					dirs.remove(d)
 		else:
 			del dirs[:]
 		# }}} 檢查是否要掃描子資料夾
