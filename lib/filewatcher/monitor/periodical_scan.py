@@ -115,7 +115,10 @@ def __scan_walk_impl(last_scan_time, watcher_instance, target_directory, recursi
 		# {{{ 掃描所有檔案是否有變動
 		for f in files:
 			fpath = os.path.join(root, f)
-			finfo = os.stat(fpath)
+			try:
+				finfo = os.stat(fpath)
+			except:
+				continue
 
 			is_updated_file = False
 
