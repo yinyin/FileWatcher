@@ -219,7 +219,6 @@ def _load_config_impl_globalconfig(configMap):
 	回傳值:
 		WatcherConfiguration 物件
 	"""
-
 	target_directory = configMap['target_directory']
 	if (target_directory is None) or (False == os.path.isdir(target_directory)):
 		return None
@@ -378,9 +377,8 @@ def _load_config_impl_watchentries(watch_entries_cfg, operation_deliver, operati
 def _load_config_impl_import_external_watchentries(watch_entries, external_files, base_folder_path, operation_deliver, operation_schedule_seq, operation_run_newupdate_seq, operation_run_dismiss_seq):
 	for external_cfg_file in external_files:
 		expanded_external_cfg_path = os.path.join(base_folder_path, external_cfg_file)
-		fp = open(expanded_external_cfg_path, 'r')
-		ext_watchentries_cmap = yaml.load(fp)
-		fp.close()
+		with open(expanded_external_cfg_path, 'r') as fp:
+			ext_watchentries_cmap = yaml.load(fp)
 		ext_watch_entries = _load_config_impl_watchentries(ext_watchentries_cmap.get('watching_entries', ()), operation_deliver, operation_schedule_seq, operation_run_newupdate_seq, operation_run_dismiss_seq)
 		if len(ext_watch_entries) > 0:
 			watch_entries.extend(ext_watch_entries)
