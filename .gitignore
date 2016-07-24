@@ -1,9 +1,41 @@
-*.pyc
 
-.DS_Store
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+*.egg-info/
+.installed.cfg
+*.egg
+
+*.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+*~
+.fuse_hidden*
+.directory
+
+.hg/
+.hgignore
+
 .project
 .pydevproject
 .settings
+
 runtime
 test.py
 etc/test.yaml
