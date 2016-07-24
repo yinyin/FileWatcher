@@ -1,3 +1,4 @@
+
 # -*- coding: utf-8 -*-
 
 """ 儲存運作過程中資料 """
@@ -20,7 +21,7 @@ FPCHK_MODIFING = 3
 FPCHK_MODIFIED = 4
 
 
-class MetaStorage:
+class MetaStorage(object):
 	""" 儲存 Meta 資料的資料庫物件 """
 
 	def __init__(self, file_path, meta_dupcheck_reserve_day, meta_missingfile_reserve_day):
@@ -30,8 +31,9 @@ class MetaStorage:
 			meta_dupcheck_reserve_day - 重複檔案資料保存天數 (重複性檢查)
 			meta_missingfile_reserve_day - 已消失檔案資料保存天數 (新增或修改檔案檢查)
 		"""
+		super(MetaStorage, self).__init__()
 
-		self.db = sqlite3.connect(file_path)
+		self.db = sqlite3.connect(file_path)	#@UndefinedVariable
 		self.meta_dupcheck_reserve_second = meta_dupcheck_reserve_day * 86400
 		self.meta_missingfile_reserve_second = meta_missingfile_reserve_day * 86400
 		self.lastmaintain = time.time()
@@ -41,8 +43,8 @@ class MetaStorage:
 	# ### __init__
 
 	def _prepare_database(self):
-		""" 準備資料庫，當資料庫是新的時要建立資料表 """
-
+		""" 準備資料庫，當資料庫是新的時要建立資料表
+		"""
 		c = self.db.cursor()
 
 		c.execute("""CREATE TABLE IF NOT EXISTS DuplicateCheck(file_name TEXT NOT NULL, file_sig TEXT NOT NULL, first_contact_time DATETIME NOT NULL, last_contact_time DATETIME NOT NULL, lifetime_retain INTEGER NOT NULL, PRIMARY KEY (file_name, file_sig))""")
@@ -94,7 +96,6 @@ class MetaStorage:
 			True - File is duplicated
 			False - File is not duplicated
 		"""
-
 		self._maintain_database()
 
 		result = False
@@ -134,13 +135,12 @@ class MetaStorage:
 			FPCHK_MODIFING=3 - 檔案正在修改
 			FPCHK_MODIFIED=4 - 檔案已經修改
 		"""
-
 		self._maintain_database()
 
 		result_status = None
 		file_size = int(file_size)
 		file_mtime = int(file_mtime)
-		
+
 		if tstamp is None:
 			tstamp = int(time.time())
 
@@ -196,12 +196,11 @@ class MetaStorage:
 		回傳值:
 			含有檔案相對路徑與檔名 tuple 的串列
 		"""
-
 		if tstamp is None:
 			tstamp = time.time() - self.meta_missingfile_reserve_second
-		
+
 		deleted_file = []
-		
+
 		c = self.db.cursor()
 
 		c.execute("""SELECT file_relfolder, file_name FROM PresenceCheck WHERE (last_contact_time < ?)""", (tstamp,))
@@ -210,10 +209,10 @@ class MetaStorage:
 			deleted_file.append( (r[0], r[1],) )
 			r = c.fetchone()
 		c.execute("""DELETE FROM PresenceCheck WHERE (last_contact_time < ?)""", (tstamp,))
-		
+
 		c.close()
 		self.db.commit()
-		
+
 		return deleted_file
 	# ### def test_file_deletion_and_purge
 # ### MetaStorage
@@ -227,19 +226,15 @@ def compute_file_signature(filepath):
 	回傳值:
 		數位簽章字串
 	"""
-
-	f = open(filepath, 'rb')
-
-	digester = hashlib.md5()
-	reach_eof = False
-	while reach_eof == False:
-		data = f.read(8192)
-		if not data:
-			reach_eof = True
-		else:
-			digester.update(data)
-
-	f.close()
+	with open(filepath, 'rb') as f:
+		digester = hashlib.md5()
+		reach_eof = False
+		while reach_eof == False:
+			data = f.read(8192)
+			if not data:
+				reach_eof = True
+			else:
+				digester.update(data)
 
 	raw_dgst = digester.digest()
 	encoded_dgst = base64.b64encode(raw_dgst)
@@ -248,33 +243,31 @@ def compute_file_signature(filepath):
 # ### compute_file_signature
 
 
-__tzoffset = None
-__tzoffset_last_update = 0
+_tzoffset = None
+_tzoffset_last_update = 0
 
 def get_tzoffset():
 	""" 取得時區差異秒數 (在臺灣會取得負值: -28800)
 	"""
-
-	global __tzoffset, __tzoffset_last_update
+	global _tzoffset, _tzoffset_last_update
 
 	current_time = time.time()
-	if (current_time - __tzoffset_last_update) > 3600:
-		__tzoffset_last_update = current_time
+	if (current_time - _tzoffset_last_update) > 3600:
+		_tzoffset_last_update = current_time
 
-		__tzoffset = time.altzone
-		if __tzoffset is None:
-			__tzoffset = time.timezone
+		_tzoffset = time.altzone
+		if _tzoffset is None:
+			_tzoffset = time.timezone
 
-	if __tzoffset is None:
-		__tzoffset = 0
+	if _tzoffset is None:
+		_tzoffset = 0
 
-	return __tzoffset
+	return _tzoffset
 # ### get_tzoffset
 
 def get_time_today():
 	""" 取得今日零時至現在的累計秒數 (本地時間)
 	"""
-
 	tzoffset = get_tzoffset()
 
 	localsecond = time.time() - tzoffset
@@ -282,5 +275,7 @@ def get_time_today():
 
 	return todaysecond
 # ### get_time_today
+
+
 
 # vim: ts=4 sw=4 ai nowrap

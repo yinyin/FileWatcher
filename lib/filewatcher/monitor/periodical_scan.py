@@ -1,3 +1,4 @@
+
 # -*- coding: utf-8 -*-
 
 """ 定時掃描變更檔案系統監視模組 """
@@ -21,7 +22,6 @@ def get_module_prop():
 	回傳值:
 		傳回 componentprop.MonitorProp 物件
 	"""
-
 	return _cached_module_prop_instance
 # ### def get_module_prop
 
@@ -44,9 +44,9 @@ def set_ignorance_checker(checker):
 
 
 
-__scan_interval = 1200
-__cron_interval_style = False
-__blackout_time = []
+_scan_interval = 1200
+_cron_interval_style = False
+_blackout_time = []
 
 _metastorage = None
 
@@ -59,21 +59,20 @@ def monitor_configure(config, metastorage):
 	回傳值:
 		(無)
 	"""
-
-	global __scan_interval, __cron_interval_style, __blackout_time, _metastorage
+	global _scan_interval, _cron_interval_style, _blackout_time, _metastorage
 
 	# {{{ 掃描間隔
 	if 'scan_interval' in config:
 		try:
-			__scan_interval = int(config['scan_interval'])
-			if __scan_interval < 0:
-				__scan_interval = -__scan_interval
-				__cron_interval_style = True
+			_scan_interval = int(config['scan_interval'])
+			if _scan_interval < 0:
+				_scan_interval = -_scan_interval
+				_cron_interval_style = True
 
-			if __scan_interval < 120:	# set a minimal value
-				__scan_interval = 120
+			if _scan_interval < 120:	# set a minimal value
+				_scan_interval = 120
 		except:
-			__scan_interval = 1200
+			_scan_interval = 1200
 	# }}} 掃描間隔
 
 	# 是否使用儲存紀錄到 MetaStorage 的比對方式
@@ -89,7 +88,7 @@ def monitor_configure(config, metastorage):
 					tinterval = filewatchconfig.TimeInterval(t['from'], t['to'])
 				else:
 					tinterval = filewatchconfig.TimeInterval(t[0], t[1])
-				__blackout_time.append(tinterval)
+				_blackout_time.append(tinterval)
 			except:
 				pass
 	# }}} 將不掃描時間讀入
@@ -98,14 +97,12 @@ def monitor_configure(config, metastorage):
 	if 'ignorance-checker' in config:
 		set_ignorance_checker(str(config['ignorance-checker']))
 
-	syslog.syslog(syslog.LOG_INFO, "periodical_scan configurated (scan_interval=%d/c:%r)." % (__scan_interval, __cron_interval_style,))
+	syslog.syslog(syslog.LOG_INFO, "periodical_scan configurated (scan_interval=%d/c:%r)." % (_scan_interval, _cron_interval_style,))
 # ### def monitor_configure
 
 
-def __scan_walk_impl(last_scan_time, watcher_instance, target_directory, recursive_watch):
-
+def _scan_walk_impl(last_scan_time, watcher_instance, target_directory, recursive_watch):
 	current_tstamp = int(time.time())
-
 	for root, dirs, files in os.walk(target_directory):
 		# 製造相對路徑
 		relpath = os.path.relpath(root, target_directory)
@@ -154,16 +151,16 @@ def __scan_walk_impl(last_scan_time, watcher_instance, target_directory, recursi
 		df = _metastorage.test_file_deletion_and_purge(current_tstamp - 1)
 		for dfinfo in df:
 			watcher_instance.discover_file_change(dfinfo[1], dfinfo[0], watcher.FEVENT_DELETED)
-# ### def __scan_walk_impl
+# ### def _scan_walk_impl
 
 _last_scan_tstamp = 0
 
-def __scan_worker(arg):
+def _scan_worker(arg):
 	global _last_scan_tstamp
 
 	watcher_instance, target_directory, recursive_watch, = arg
 
-	min_scan_interval = __scan_interval / 4
+	min_scan_interval = _scan_interval / 4
 
 	perform_scan = False
 	current_tstamp = time.time()
@@ -171,17 +168,17 @@ def __scan_worker(arg):
 
 	# {{{ check if need do scan
 	if (current_tstamp - _last_scan_tstamp) > min_scan_interval:	# must > min_scan_interval to avoid over-scan
-		if True == __cron_interval_style:
-			if (current_tstamp - (current_tstamp % __scan_interval)) > _last_scan_tstamp:
+		if True == _cron_interval_style:
+			if (current_tstamp - (current_tstamp % _scan_interval)) > _last_scan_tstamp:
 				perform_scan = True
 		else:
-			if (current_tstamp - watcher_instance.last_file_event_tstamp) > __scan_interval:
+			if (current_tstamp - watcher_instance.last_file_event_tstamp) > _scan_interval:
 				perform_scan = True
 
 	if perform_scan:
 		# {{{ see if in blackout time
 		local_tstamp = current_tstamp - tz_offset
-		for b in __blackout_time:
+		for b in _blackout_time:
 			if b.isIn(local_tstamp):
 				perform_scan = False
 		# }}} see if in blackout time
@@ -193,11 +190,11 @@ def __scan_worker(arg):
 		if _ignorance_checker is not None:
 			_ignorance_checker(None, None)
 
-		__scan_walk_impl(_last_scan_tstamp, watcher_instance, target_directory, recursive_watch)	# do scan
+		_scan_walk_impl(_last_scan_tstamp, watcher_instance, target_directory, recursive_watch)	# do scan
 
 		current_tstamp = time.time()
 		_last_scan_tstamp = current_tstamp
-# ### def __scan_worker
+# ### def _scan_worker
 
 
 
@@ -211,8 +208,7 @@ def monitor_start(watcher_instance, target_directory, recursive_watch=False):
 	回傳值:
 		(無)
 	"""
-
-	watcher_instance.process_driver.append_periodical_call(__scan_worker, (watcher_instance, target_directory, recursive_watch,), (__scan_interval / 4))
+	watcher_instance.process_driver.append_periodical_call(_scan_worker, (watcher_instance, target_directory, recursive_watch,), (_scan_interval / 4))
 # ### def monitor_start
 
 
@@ -224,7 +220,6 @@ def monitor_stop():
 	回傳值:
 		(無)
 	"""
-
 	pass
 # ### def monitor_stop
 

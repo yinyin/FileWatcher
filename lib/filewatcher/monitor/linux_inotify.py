@@ -1,7 +1,7 @@
+
 # -*- coding: utf-8 -*-
 
-""" 檔案系統監視模組 """
-
+""" 檔案系統監視模組 (Linux iNotify) """
 
 import os
 import pyinotify
@@ -9,7 +9,6 @@ import pyinotify
 from filewatcher import componentprop
 from filewatcher import filewatchconfig
 from filewatcher import watcher
-
 
 
 def _get_relpath(path, start):
@@ -45,12 +44,12 @@ def set_queue_overflow_callback(callback_func):
 _ignorance_checker = None
 def set_ignorance_checker(checker):
 	""" 設定忽略路徑與檔案檢查器
-	
+
 	參數:
 		checker - 進行路徑與檔案名稱檢查的函式，函數原型: (relpath=None, filename=None) 回傳 True 表要忽略所檢查的項目
 	"""
 	global _ignorance_checker
-	
+
 	if isinstance(checker, str):
 		_ignorance_checker = filewatchconfig.lookup_ignorance_checker(checker)
 	else:
@@ -62,7 +61,7 @@ _revise_period = None
 def set_revise_period(revise_period=None):
 	""" 設定重新檢驗週期
 	在給定的週期時間後會重新執行 ignorance-checker 檢查所有註冊的 watcher 是不是要取消
-	
+
 	參數:
 		revise_period=None - 要設定的週期時間，單位是秒
 	"""
@@ -90,7 +89,7 @@ def _periodical_folder_reviser(arg):
 
 	target_directory = arg
 
-	for root, dirs, files in os.walk(target_directory):
+	for root, dirs, _files in os.walk(target_directory):
 		#print "linux_inotify: revising %r" % (root)
 		no_further_scan = []
 		wd_to_drop = []
@@ -113,12 +112,13 @@ def _periodical_folder_reviser(arg):
 # ### def _periodical_folder_reviser
 
 
-class _ExcludeFilter:
+class _ExcludeFilter(object):
 	def __init__(self, target_directory, recursive_watch=False):
+		super(_ExcludeFilter, self).__init__()
 		self.target_directory = target_directory
 		self.recursive_watch = recursive_watch
 	# ### def __init__
-	
+
 	def do_exclude_filting(self, filepath):
 		filepath = os.path.abspath(filepath)
 		if os.path.isdir(filepath):
@@ -126,16 +126,13 @@ class _ExcludeFilter:
 			name = None
 		else:
 			path, name, = os.path.split(filepath)
-
 		if (False == self.recursive_watch) and (path != self.target_directory):
 			return True
-
 		if _ignorance_checker is not None:
 			relpath = _get_relpath(path, self.target_directory)
 			r = _ignorance_checker(relpath, name)
 			if r:
 				return True
-
 		return False
 	# ### def do_exclude_filting
 
@@ -153,7 +150,6 @@ def monitor_configure(config, metastorage):
 	回傳值:
 		(無)
 	"""
-
 	# 載入 ignorance checker
 	if 'ignorance-checker' in config:
 		set_ignorance_checker(str(config['ignorance-checker']))
@@ -200,8 +196,8 @@ def _periodical_watch_files_flush(arg):
 
 class _EventHandler(pyinotify.ProcessEvent):
 	def __init__(self, watcher_instance, target_directory):
-		pyinotify.ProcessEvent.__init__(self)
-		
+		super(_EventHandler, self).__init__()
+
 		self.watcher_instance = watcher_instance
 		self.target_directory = target_directory
 	# ### def __init__
@@ -247,7 +243,7 @@ class _EventHandler(pyinotify.ProcessEvent):
 		if _queue_overflow_event_callback is not None:
 			_queue_overflow_event_callback()
 	# ### def process_IN_Q_OVERFLOW
-# ### class EventHandler
+# ### class _EventHandler
 
 _watchmanager = None
 def monitor_start(watcher_instance, target_directory, recursive_watch=False):
@@ -260,7 +256,6 @@ def monitor_start(watcher_instance, target_directory, recursive_watch=False):
 	回傳值:
 		(無)
 	"""
-
 	global _watchmanager
 
 	mask = pyinotify.IN_DELETE | pyinotify.IN_CLOSE_WRITE | pyinotify.IN_MOVED_TO	# watched events; @UndefinedVariable
@@ -274,10 +269,10 @@ def monitor_start(watcher_instance, target_directory, recursive_watch=False):
 
 	_watchmanager = pyinotify.WatchManager(exclude_filter=_ExcludeFilter(target_directory, recursive_watch))
 	handler = _EventHandler(watcher_instance, target_directory)
-	notifier = pyinotify.AsyncNotifier(_watchmanager, handler, channel_map=watcher_instance.process_driver.async_map)
+	_notifier = pyinotify.AsyncNotifier(_watchmanager, handler, channel_map=watcher_instance.process_driver.async_map)
 
 	auto_add_folder = False if (not recursive_watch) else True
-	wdd = _watchmanager.add_watch(target_directory, mask, rec=True, auto_add=auto_add_folder)
+	_wdd = _watchmanager.add_watch(target_directory, mask, rec=True, auto_add=auto_add_folder)
 
 	if _revise_period is not None:
 		watcher_instance.process_driver.append_periodical_call(_periodical_folder_reviser, target_directory, _revise_period)
@@ -294,7 +289,6 @@ def monitor_stop():
 	回傳值:
 		(無)
 	"""
-
 	pass
 # ### def monitor_stop
 

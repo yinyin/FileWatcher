@@ -12,7 +12,7 @@ import yaml
 from filewatcher import metadatum
 
 
-class WatcherConfiguration:
+class WatcherConfiguration(object):
 	""" global configuration """
 
 	def __init__(self, target_directory, recursive_watch, remove_unoperate_file, meta_db_path, meta_reserve_day_duplicatecheck, meta_reserve_day_missingcheck):
@@ -26,6 +26,7 @@ class WatcherConfiguration:
 			meta_reserve_day_duplicatecheck - 重複檔案檢查資訊留存天數
 			meta_reserve_day_missingcheck - 已刪除檔案檢查資訊留存天數
 		"""
+		super(WatcherConfiguration, self).__init__()
 
 		self.target_directory = target_directory
 		self.recursive_watch = recursive_watch
@@ -48,7 +49,7 @@ class WatcherConfiguration:
 # ### class WatcherConfiguration
 
 
-class OperationEntry:
+class OperationEntry(object):
 	""" configuration of operation """
 
 	def __init__(self, opname, argv, opmodule):
@@ -59,6 +60,7 @@ class OperationEntry:
 			argv - 作業參數字串
 			opmodule - 執行作業的模組
 		"""
+		super(OperationEntry, self).__init__()
 
 		self.opname = opname
 		self.argv = argv
@@ -67,7 +69,7 @@ class OperationEntry:
 # ### class OperationEntry
 
 
-class MonitorEntry:
+class MonitorEntry(object):
 	""" monitor configuration """
 
 	def __init__(self, file_regex, path_regex, do_dupcheck, operation_update, operation_remove, process_as_uniqname=True, content_check_label=None, ignorance_checker=None):
@@ -83,6 +85,7 @@ class MonitorEntry:
 			content_check_label - 是否在進行重複性比對作業時使用指定的字串來覆蓋掉檔名 (不同檔名視為同一筆檔案)
 			ignorance_checker - 檢查所找到的目錄或檔案是否要忽略
 		"""
+		super(MonitorEntry, self).__init__()
 
 		self.file_regex = re.compile(file_regex)
 		self.path_regex = None if (path_regex is None) else re.compile(path_regex)
@@ -103,7 +106,7 @@ class MonitorEntry:
 
 
 
-class TimeInterval:
+class TimeInterval(object):
 	""" 僅含小時與分 (HH:MM) 的時間區間 """
 
 	def __init__(self, time_start, time_end):
@@ -112,6 +115,7 @@ class TimeInterval:
 			time_start - 起始時間
 			time_end - 終止時間
 		"""
+		super(TimeInterval, self).__init__()
 
 		ts = time.strptime(time_start, "%H:%M")
 		time_start = datetime.timedelta(minutes=ts.tm_min, hours=ts.tm_hour)
@@ -136,7 +140,6 @@ class TimeInterval:
 			True - 是在區間內
 			False - 否
 		"""
-
 		# {{{ convert format into seconds from mid-night
 		if isinstance(t, (int, long, float,)):
 			if t >= 86400:
@@ -165,7 +168,6 @@ def register_ignorance_checker(name, checker):
 		name - 要註冊的名字
 		checker - 進行路徑與檔案名稱檢查的函式，函數原型: (relpath=None, filename=None) 回傳 True 表要忽略所檢查的項目
 	"""
-
 	global _ignorance_checker_list
 
 	_ignorance_checker_list[name] = checker
@@ -179,7 +181,6 @@ def lookup_ignorance_checker(name):
 	回傳值:
 		檢查器，或是 None
 	"""
-
 	name = name.strip()
 	if len(name) < 1:
 		return None
@@ -189,14 +190,13 @@ def lookup_ignorance_checker(name):
 
 
 
-def _convert_cfg_bool(v, default_value=False):
+def _to_bool(v, default_value=False):
 	""" 將傳入的參數值轉換為 bool
 	參數:
 		v - 要轉換的參數值
 	回傳值:
 		True 或 False
 	"""
-
 	if isinstance(v, bool):
 		return v
 	elif isinstance(v, (int, long, float,)):
@@ -207,9 +207,8 @@ def _convert_cfg_bool(v, default_value=False):
 	elif isinstance(v, (str, unicode,)):
 		if len(v) > 1:
 			return (True if (str(v[0]) in ('y', 'Y', 't', 'T',)) else False)
-
 	return default_value
-# ### def _convert_cfg_bool
+# ### def _to_bool
 
 
 def _load_config_impl_globalconfig(configMap):
@@ -227,10 +226,10 @@ def _load_config_impl_globalconfig(configMap):
 	target_directory = os.path.abspath(target_directory)
 
 	# set 'recursive_watch'
-	recursive_watch = _convert_cfg_bool(configMap.get('recursive_watch', False), default_value=False)
+	recursive_watch = _to_bool(configMap.get('recursive_watch', False), default_value=False)
 
 	# set 'remove_unoperate_file'
-	remove_unoperate_file = _convert_cfg_bool(configMap.get('remove_unoperate_file', False), default_value=False)
+	remove_unoperate_file = _to_bool(configMap.get('remove_unoperate_file', False), default_value=False)
 
 	# {{{ load meta storage options
 	meta_db_path = None
@@ -259,7 +258,6 @@ def _load_config_impl_moduleconfig(configMap, config_reader, global_config):
 	回傳值:
 		(無)
 	"""
-
 	for mod_cfgname, mod_object in config_reader.iteritems():
 		if mod_cfgname in configMap:
 			m = mod_object.get_module_prop()
@@ -281,7 +279,6 @@ def _load_config_impl_watchentries_operation(operation_cfg, operation_deliver, o
 	回傳值:
 		含有 OperationEntry 物件的串列
 	"""
-
 	ordered_operation_block = []
 
 	# {{{ 將 operation block 依據 operation_schedule_seq 排序
@@ -333,7 +330,6 @@ def _load_config_impl_watchentries(watch_entries_cfg, operation_deliver, operati
 	回傳值:
 		含有 OperationEntry 物件的串列
 	"""
-
 	watch_entries = []
 
 	for entry_cfg in watch_entries_cfg:
@@ -343,7 +339,7 @@ def _load_config_impl_watchentries(watch_entries_cfg, operation_deliver, operati
 			if 'path_regex' in entry_cfg:
 				path_regex = str(entry_cfg['path_regex'])
 
-			do_dupcheck = _convert_cfg_bool(entry_cfg.get('duplicate_check', False), default_value=False)
+			do_dupcheck = _to_bool(entry_cfg.get('duplicate_check', False), default_value=False)
 
 			content_check_label = None
 			if (True == do_dupcheck) and ('duplicate_content_check_label' in entry_cfg):
@@ -352,7 +348,7 @@ def _load_config_impl_watchentries(watch_entries_cfg, operation_deliver, operati
 				if len(v) > 0:
 					content_check_label = v
 
-			process_as_uniqname = _convert_cfg_bool(entry_cfg.get('process_as_uniqname', True), default_value=True)
+			process_as_uniqname = _to_bool(entry_cfg.get('process_as_uniqname', True), default_value=True)
 
 			ignorance_checker = None
 			if 'ignorance-checker' in entry_cfg:
@@ -403,10 +399,8 @@ def load_config(config_filename, config_reader, operation_deliver, operation_sch
 	傳回值:
 		(global_config, watch_entries,) - 存放 WatcherConfiguration 物件 (global_config) 及 MonitorEntry 物件 list (watch_entries) 的 tuple
 	"""
-
-	fp = open(config_filename, 'r')
-	configMap = yaml.load(fp)
-	fp.close()
+	with open(config_filename, 'r') as fp:
+		configMap = yaml.load(fp)
 
 	# Global Configuration
 	global_config = _load_config_impl_globalconfig(configMap)
@@ -430,17 +424,15 @@ def load_config(config_filename, config_reader, operation_deliver, operation_sch
 
 
 
-def __keyfunction_prop_schedule(prop):
+def _keyfunction_prop_schedule(prop):
 	""" 排序用 key function (componentprop.OperatorProp 物件，針對 schedule_priority) """
-
 	return prop.schedule_priority
 # ### def __keyfunction_schedule
 
-def __keyfunction_prop_run(prop):
+def _keyfunction_prop_run(prop):
 	""" 排序用 key function (componentprop.OperatorProp 物件，針對 run_priority) """
-
 	return prop.run_priority
-# ### def __keyfunction_prop_run
+# ### def _keyfunction_prop_run
 
 
 def get_module_interfaces(mods):
@@ -457,7 +449,6 @@ def get_module_interfaces(mods):
 		operation_run_newupdate_seq - 排定作業執行先後順序用的作業名稱串列 (針對檔案新增或修改事件)
 		operation_run_dismiss_seq - 排定作業執行先後順序用的作業名稱串列 (針對檔案刪除或移出事件)
 	"""
-
 	config_readers = {}
 
 	monitor_implement = {}
@@ -494,9 +485,9 @@ def get_module_interfaces(mods):
 		# }}} if module is operator module
 
 	# {{{ sort operator module lists
-	operation_schedule_seq = [x.operation_name for x in sorted(operation_schedule_seq, key=__keyfunction_prop_schedule)]	# eg: 含有 copy 的作業塊應該比含有 move 的早執行
-	operation_run_newupdate_seq = [x.operation_name for x in sorted(operation_run_newupdate_seq, key=__keyfunction_prop_run)]	# eg: copy 或 move 要比 coderunner 早執行
-	operation_run_dismiss_seq = [x.operation_name for x in sorted(operation_run_dismiss_seq, key=__keyfunction_prop_run)]
+	operation_schedule_seq = [x.operation_name for x in sorted(operation_schedule_seq, key=_keyfunction_prop_schedule)]	# eg: 含有 copy 的作業塊應該比含有 move 的早執行
+	operation_run_newupdate_seq = [x.operation_name for x in sorted(operation_run_newupdate_seq, key=_keyfunction_prop_run)]	# eg: copy 或 move 要比 coderunner 早執行
+	operation_run_dismiss_seq = [x.operation_name for x in sorted(operation_run_dismiss_seq, key=_keyfunction_prop_run)]
 	# }}} sort operator module lists
 
 	return (config_readers, monitor_implement, operation_deliver, operation_schedule_seq, operation_run_newupdate_seq, operation_run_dismiss_seq,)

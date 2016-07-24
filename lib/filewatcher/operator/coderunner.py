@@ -1,3 +1,4 @@
+
 # -*- coding: utf-8 -*-
 
 import os
@@ -22,19 +23,19 @@ def _subprocess_worker(worker_qlabel, worker_id, q):
 		try:
 			cmd = q.get(True, None)
 			if cmd is not None:
-				retcode = -65536
 				try:
 					retcode = subprocess.call(cmd)
 				except Exception as e:
-					print "Have exception [errocde=]: cmd=%r; exception=%s" % (cmd, e,)
-				syslog.syslog(syslog.LOG_INFO, "QueuedInvoke: run program [%s] with retcode=%d, worker=%d/%r."%(cmd, retcode, worker_id, worker_qlabel,))
+					print "Have exception on subprocess.call: cmd=%r; exception=%s" % (cmd, e,)
+					retcode = -65536
+				syslog.syslog(syslog.LOG_INFO, "QueuedInvoke: run program [%s] with retcode=%d, worker=%d/%r." % (cmd, retcode, worker_id, worker_qlabel,))
 			else:
-				print "subprocessworker exiting (ID=%d/Q=%r)" % (worker_id, worker_qlabel,)
+				print "subprocess-worker exiting (ID=%d/Q=%r)" % (worker_id, worker_qlabel,)
 				running = False
 			q.task_done()
 		except Queue.Empty:
 			pass
-# ### def __subprocess_worker
+# ### def _subprocess_worker
 
 class _RunConfiguration:
 	def __init__(self, queue, command):
@@ -54,7 +55,6 @@ class _RunnerQueue:
 			max_running_process - 最大同時執行行程數，使用 None 表示不指定
 			max_running_second - 最長程式執行時間 (秒) 上限，使用 None 表示不指定 (** 未實作)
 		"""
-
 		self.queue_label = queue_label
 		self.max_running_process = max_running_process
 		self.max_running_second = max_running_second
@@ -69,9 +69,8 @@ class _RunnerQueue:
 		參數: (無)
 		回傳值: (無)
 		"""
-
 		if (self.max_running_process is None) or (self.max_running_process < 1):
-			syslog.syslog(syslog.LOG_INFO, "allocated static runner (Q=%r)"%(self.queue_label,))
+			syslog.syslog(syslog.LOG_INFO, "allocated static runner (Q=%r)" % (self.queue_label,))
 			return	# 最大執行行程為空值的話則不啟動任何 worker
 
 		workers_q = []
@@ -82,7 +81,7 @@ class _RunnerQueue:
 			workers_q.append(wk)
 			print "created worker named %r (ID=%d/Q=%r)" % (wk.name, idx, self.queue_label,)
 		self.workers = workers_q
-		syslog.syslog(syslog.LOG_INFO, "allocated threaded runner (Q=%r, size=%d)"%(self.queue_label, self.max_running_process,))
+		syslog.syslog(syslog.LOG_INFO, "allocated threaded runner (Q=%r, size=%d)" % (self.queue_label, self.max_running_process,))
 	# ### def start_workers
 
 	def run_program(self, cmdlist, filepath, carry_variable, logqueue):
@@ -96,10 +95,9 @@ class _RunnerQueue:
 		回傳值:
 			(無)
 		"""
-
 		progpath = cmdlist[0]
 		if (progpath is None) or (not os.path.isfile(progpath)) or (not os.access(progpath, os.X_OK)) or (filepath is None):
-			logqueue.append("not run any program (cmd=%r, file-path=%r)"%(cmdlist, filepath,))
+			logqueue.append("not run any program (cmd=%r, file-path=%r)" % (cmdlist, filepath,))
 			return
 
 		# {{{ build command
@@ -120,10 +118,10 @@ class _RunnerQueue:
 
 		if self.cmd_queue is None:
 			runprog_retcode = subprocess.call(cmd)
-			logqueue.append("run program [%s: %r] with retcode=%d"%(progpath, cmd, runprog_retcode))
+			logqueue.append("run program [%s: %r] with retcode=%d" % (progpath, cmd, runprog_retcode))
 		else:
 			self.cmd_queue.put(cmd)
-			logqueue.append("queued program [%s: %r] into queue=%s"%(progpath, cmd, self.queue_label))
+			logqueue.append("queued program [%s: %r] into queue=%s" % (progpath, cmd, self.queue_label))
 	# ### def run_program
 
 	def stop_workers(self):
@@ -132,17 +130,14 @@ class _RunnerQueue:
 		參數: (無)
 		回傳值: (無)
 		"""
-
 		if self.cmd_queue is None:
 			return	# no worker running, naturally
-
 		for wk in self.workers:
 			if wk.is_alive():
 				self.cmd_queue.put(None)
 			else:
 				print "worker %r not alive anymore" % (wk.name,)
-
-		syslog.syslog(syslog.LOG_NOTICE, "RunnerQueue joining task queue (Q=%r)"%(self.queue_label,))
+		syslog.syslog(syslog.LOG_NOTICE, "RunnerQueue joining task queue (Q=%r)" % (self.queue_label,))
 		self.cmd_queue.join()
 	# ### def stop_workers
 # ### class Runner
@@ -157,7 +152,6 @@ def get_module_prop():
 	回傳值:
 		傳回 componentprop.OperatorProp 物件
 	"""
-
 	return _cached_module_prop_instance
 # ### def get_module_prop
 
@@ -171,7 +165,6 @@ def operator_configure(config, metastorage):
 	回傳值:
 		(無)
 	"""
-
 	default_max_running_process = None
 
 	# {{{ get queue size for default queue
@@ -202,7 +195,6 @@ def operator_configure(config, metastorage):
 	# setup default queue
 	_runner_queue['_DEFAULT'] = _RunnerQueue('_DEFAULT', default_max_running_process)
 
-
 	# {{{ start workers
 	for runner in _runner_queue.itervalues():
 		runner.start_workers()
@@ -219,7 +211,6 @@ def read_operation_argv(argv):
 	回傳值:
 		吻合工作模組需求的設定物件
 	"""
-
 	cmd_argv = None
 	que_argv = '_DEFAULT'
 
@@ -233,9 +224,9 @@ def read_operation_argv(argv):
 	result_cmd = None
 
 	# {{{ attempt to build command list as list
-	if isinstance(cmd_argv, str) or isinstance(cmd_argv, unicode):
+	if isinstance(cmd_argv, (basestring, str, unicode,)):
 		result_cmd = [cmd_argv, """%FILENAME%"""]
-	elif isinstance(cmd_argv, tuple) or isinstance(cmd_argv, list):
+	elif isinstance(cmd_argv, (tuple, list,)):
 		have_filename_macro = False
 		result_cmd = []
 		for v in cmd_argv:
@@ -250,7 +241,7 @@ def read_operation_argv(argv):
 
 	# {{{ check if use queue short-cut -syntax (eg: (QUEUE) /path/to/cmd )
 	if isinstance(result_cmd, list):
-		m = _task_queue_assignment.match( result_cmd[0] )
+		m = _task_queue_assignment.match(result_cmd[0])
 		if m is not None:
 			q = m.group(1)
 			result_cmd[0] = m.group(2)
@@ -295,7 +286,6 @@ def operator_stop():
 	回傳值:
 		(無)
 	"""
-
 	syslog.syslog(syslog.LOG_NOTICE, "coderunner: stopping all Runner")
 	for runner in _runner_queue.itervalues():
 		runner.stop_workers()

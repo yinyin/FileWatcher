@@ -1,3 +1,4 @@
+
 # -*- coding: utf-8 -*-
 
 """ 檔案操作作業模組 """
@@ -17,7 +18,6 @@ def get_module_prop():
 	回傳值:
 		傳回 componentprop.OperatorProp 物件
 	"""
-
 	return _cached_module_prop_instance
 # ### def get_module_prop
 
@@ -31,7 +31,6 @@ def operator_configure(config, metastorage):
 	回傳值:
 		(無)
 	"""
-
 	pass
 # ### def operator_configure
 
@@ -45,7 +44,6 @@ def read_operation_argv(argv):
 	回傳值:
 		吻合工作模組需求的設定物件
 	"""
-
 	if os.path.isdir(argv) and os.access(argv, os.W_OK):
 		return os.path.abspath(argv)
 	return None
@@ -64,7 +62,6 @@ def perform_operation(current_filepath, orig_filename, argv, oprexec_ref, logque
 	回傳值:
 		經過操作後的檔案絕對路徑
 	"""
-
 	target_path = os.path.join(argv, orig_filename)
 	try:
 		if (True == os.access(target_path, os.F_OK)) and (False == os.access(target_path, os.W_OK)):
@@ -86,7 +83,6 @@ def operator_stop():
 	回傳值:
 		(無)
 	"""
-
 	pass
 # ### def operator_stop
 

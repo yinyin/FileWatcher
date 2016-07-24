@@ -23,8 +23,8 @@ import sys
 # ### def _inotify_queue_full
 
 def _get_watcher_modules():
-	""" 取得要使用的模組列表 """
-
+	""" 取得要使用的模組列表
+	"""
 	from filewatcher.monitor import linux_inotify
 	from filewatcher.operator import copier
 	from filewatcher.operator import mover
@@ -43,8 +43,8 @@ def _get_watcher_modules():
 
 
 def _start_watcher(config_path):
-	""" 啟動 file watcher """
-
+	""" 啟動 file watcher
+	"""
 	from filewatcher import watcher
 	watcher.FW_APP_NAME = 'FileWatcher_for_Linux-example'
 	watcher.run_watcher(config_path, _get_watcher_modules())

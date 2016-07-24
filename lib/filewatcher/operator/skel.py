@@ -1,3 +1,4 @@
+
 # -*- coding: utf-8 -*-
 
 """ 檔案操作作業模組 """
@@ -14,7 +15,6 @@ def get_module_prop():
 	回傳值:
 		傳回 componentprop.OperatorProp 物件
 	"""
-
 	return componentprop.OperatorProp('module-name (for config)', 'operation-name (for operation)', schedule_priority=None, run_priority=3)
 # ### def get_module_prop
 
@@ -28,7 +28,6 @@ def operator_configure(config, metastorage):
 	回傳值:
 		(無)
 	"""
-
 	pass
 # ### def operator_configure
 
@@ -42,7 +41,6 @@ def read_operation_argv(argv):
 	回傳值:
 		吻合工作模組需求的設定物件
 	"""
-
 	return argv
 # ### read_operation_argv
 
@@ -59,7 +57,6 @@ def perform_operation(current_filepath, orig_filename, argv, oprexec_ref, logque
 	回傳值:
 		經過操作後的檔案絕對路徑
 	"""
-
 	pass
 # ### def perform_operation
 
@@ -72,7 +69,6 @@ def operator_stop():
 	回傳值:
 		(無)
 	"""
-
 	pass
 # ### def operator_stop
 

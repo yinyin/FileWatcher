@@ -1,3 +1,4 @@
+
 # -*- coding: utf-8 -*-
 
 """ 檔案系統監視模組 """
@@ -14,7 +15,6 @@ def get_module_prop():
 	回傳值:
 		傳回 componentprop.OperatorProp 物件
 	"""
-
 	return componentprop.MonitorProp('monitor-name (for monitor)')
 # ### def get_module_prop
 
@@ -28,7 +28,6 @@ def monitor_configure(config, metastorage):
 	回傳值:
 		(無)
 	"""
-
 	pass
 # ### def monitor_configure
 
@@ -43,7 +42,6 @@ def monitor_start(watcher_instance, target_directory, recursive_watch=False):
 	回傳值:
 		(無)
 	"""
-
 	pass
 # ### def monitor_start
 
@@ -56,7 +54,6 @@ def monitor_stop():
 	回傳值:
 		(無)
 	"""
-
 	pass
 # ### def monitor_stop
 

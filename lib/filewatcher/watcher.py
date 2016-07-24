@@ -1,3 +1,4 @@
+
 # -*- coding: utf-8 -*-
 
 import os
@@ -20,7 +21,7 @@ FEVENT_DELETED = 4
 FW_APP_NAME = 'filewatcher'
 
 
-class OperationExecRef:
+class OperationExecRef(object):
 	""" 作業執行參考物件 """
 
 	def __init__(self, filename_matchobj, pathname_matchobj, digisig, event_type, is_dismiss_event=False):
@@ -32,6 +33,7 @@ class OperationExecRef:
 			event_type - 事件形式
 			is_dismiss_event - 是否為檔案刪除事件
 		"""
+		super(OperationExecRef, self).__init__()
 
 		self.filename_matchobj = filename_matchobj
 		self.pathname_matchobj = pathname_matchobj
@@ -49,8 +51,10 @@ class OperationExecRef:
 # ### class OperationExecRef
 
 
-class PeriodicalCall:
+class PeriodicalCall(object):
 	def __init__(self, call_object, call_arg=None, min_interval=10):
+		super(PeriodicalCall, self).__init__()
+
 		self.call_object = call_object
 		self.call_arg = call_arg
 
@@ -83,8 +87,10 @@ class PeriodicalCall:
 	# ### def invoke
 # ### class PeriodicalCall
 
-class ProcessDriver:
+class ProcessDriver(object):
 	def __init__(self, periodical_call_interval=180):
+		super(ProcessDriver, self).__init__()
+
 		self.API_VERSION = 1
 
 		self.async_map = {}
@@ -106,7 +112,7 @@ class ProcessDriver:
 	def loop(self):
 		last_periodical_call_tstamp = 0
 
-		while False == _check_terminate_signal():
+		while not _check_terminate_signal():
 			if self.async_map:
 				asyncore.loop(20, map=self.async_map, count=1)
 			else:
@@ -121,7 +127,7 @@ class ProcessDriver:
 # ### class ProcessDriver
 
 
-class WatcherEngine:
+class WatcherEngine(object):
 	""" 被 monitor 呼叫，派送事件給 operator 執行 """
 
 	def __init__(self, global_config, watch_entries, monitor_implement, operation_deliver):
@@ -132,6 +138,8 @@ class WatcherEngine:
 			monitor_implement - Monitor 實作 (dict)
 			operation_deliver - Operator 實作 (dict)
 		"""
+		super(WatcherEngine, self).__init__()
+
 		self.global_config = global_config
 		self.watch_entries = watch_entries
 		self.monitor_implement = monitor_implement
@@ -152,7 +160,7 @@ class WatcherEngine:
 			monitor_m.monitor_start(self, self.global_config.target_directory, self.global_config.recursive_watch)
 			syslog.syslog(syslog.LOG_INFO, "started monitor module [%s]" % (monitor_name,))
 
-		syslog.syslog(syslog.LOG_NOTICE, "Activated FileWatcher::%r."%(FW_APP_NAME,))
+		syslog.syslog(syslog.LOG_NOTICE, "Activated FileWatcher::%r." % (FW_APP_NAME,))
 	# ### def activate
 
 	def deactivate(self):
@@ -166,10 +174,10 @@ class WatcherEngine:
 			operator_m.operator_stop()
 			syslog.syslog(syslog.LOG_INFO, "stopped operator [%s]" % (operator_name,))
 
-		syslog.syslog(syslog.LOG_NOTICE, "Deactivated FileWatcher::%r."%(FW_APP_NAME,))
+		syslog.syslog(syslog.LOG_NOTICE, "Deactivated FileWatcher::%r." % (FW_APP_NAME,))
 	# ### def deactivate
 
-	def __perform_operation(self, filename, folderpath, orig_path, target_path, operate_list, oprexec_ref):
+	def _perform_operation(self, filename, folderpath, orig_path, target_path, operate_list, oprexec_ref):
 		#print "oplist: %r" % (operate_list,)
 		for opr_block in operate_list:
 			current_filepath = target_path
@@ -183,9 +191,9 @@ class WatcherEngine:
 
 					if len(entry_log_queue) > 0:
 						for logline in entry_log_queue:
-							block_log_queue.append("%s: %s"%(opr_ent.opname, logline,))
+							block_log_queue.append("%s: %s" % (opr_ent.opname, logline,))
 					else:
-						block_log_queue.append("%s: (Log=N/A)"%(opr_ent.opname,))
+						block_log_queue.append("%s: (Log=N/A)" % (opr_ent.opname,))
 				else:
 					print "leaving operation loop (current-path=%r)" % (current_filepath,)
 					break
@@ -195,9 +203,9 @@ class WatcherEngine:
 				logmsg = 'no operations proceed'
 			syslog.syslog(syslog.LOG_INFO, "operation on [%s]: %s." % (orig_path, logmsg,))
 			#print "operation on [%s]: %s." % (orig_path, logmsg,)
-	# ### def __perform_operation
+	# ### def _perform_operation
 
-	def __discover_file_change(self, filename, folderpath, event_type=0):
+	def _discover_file_change(self, filename, folderpath, event_type=0):
 		""" (實作部分) 通知監視引擎找到新的檔案
 
 		參數:
@@ -205,7 +213,6 @@ class WatcherEngine:
 			folderpath - 檔案夾路徑 (相對於 target_directory 路徑)
 			event_type - 事件型別 (FEVENT_NEW, FEVENT_MODIFIED, FEVENT_DELETED)
 		"""
-
 		if (False == self.global_config.recursive_watch) and ('' != folderpath):
 			print "ignored - recursive watch disabled. (folderpath = %r)" % (folderpath,)
 			return
@@ -232,7 +239,7 @@ class WatcherEngine:
 			# {{{ do ignorance check
 			if w_case.ignorance_checker is not None:
 				if w_case.ignorance_checker(folderpath, filename):
-					syslog.syslog(syslog.LOG_INFO, "Ignored: [%s]"%(orig_path,))
+					syslog.syslog(syslog.LOG_INFO, "Ignored: [%s]" % (orig_path,))
 					return
 			# }}} do ignorance check
 
@@ -275,7 +282,7 @@ class WatcherEngine:
 			if cancel_operation is not None:
 				if True == self.global_config.remove_unoperate_file:
 					os.unlink(target_path)
-				syslog.syslog(syslog.LOG_INFO, "cancel: [%s] reason=%s."%(orig_path, cancel_operation,))
+				syslog.syslog(syslog.LOG_INFO, "cancel: [%s] reason=%s." % (orig_path, cancel_operation,))
 				#print "Cancel: [%s] reason=%s."%(orig_path, cancel_operation,)
 				return
 			# }}} cancel operation
@@ -283,10 +290,10 @@ class WatcherEngine:
 			oprexec_ref = OperationExecRef(mobj_file, mobj_path, f_sig, event_type)
 			if (FEVENT_NEW == event_type) or (FEVENT_MODIFIED == event_type):
 				#print "running update route"
-				self.__perform_operation(filename, folderpath, orig_path, target_path, w_case.operation_update, oprexec_ref)
+				self._perform_operation(filename, folderpath, orig_path, target_path, w_case.operation_update, oprexec_ref)
 			elif FEVENT_DELETED == event_type:
 				#print "running remove route"
-				self.__perform_operation(filename, folderpath, orig_path, target_path, w_case.operation_remove, oprexec_ref)
+				self._perform_operation(filename, folderpath, orig_path, target_path, w_case.operation_remove, oprexec_ref)
 			else:
 				#print "running NoOP route"
 				syslog.syslog(syslog.LOG_INFO, "NoOP: [%s] unknown event type (%r)."%(orig_path, event_type,))
@@ -295,7 +302,7 @@ class WatcherEngine:
 		# }}} scan watch entries
 
 		syslog.syslog(syslog.LOG_INFO, "NoWatchEntryFound: [%s]."%(orig_path,))
-	# ### def __discover_file_change
+	# ### def _discover_file_change
 
 	def discover_file_change(self, filename, folderpath, event_type=0):
 		""" 通知監視引擎找到新的檔案
@@ -306,7 +313,7 @@ class WatcherEngine:
 			event_type - 事件型別 (FEVENT_NEW, FEVENT_MODIFIED, FEVENT_DELETED)
 		"""
 		try:
-			self.__discover_file_change(filename, folderpath, event_type)
+			self._discover_file_change(filename, folderpath, event_type)
 		except Exception as e:
 			syslog.syslog(syslog.LOG_INFO, "Having Exception on Discover File Change: [%s]." % (e,))
 	# ### def discover_file_change
@@ -314,8 +321,8 @@ class WatcherEngine:
 
 
 def get_builtin_modules():
-	""" 取得內建的模組 (以 tuple 形式傳回) """
-
+	""" 取得內建的模組 (以 tuple 形式傳回)
+	"""
 	m = []
 
 	from filewatcher.monitor import periodical_scan
@@ -344,7 +351,6 @@ def get_watcherengine(config_filepath, enabled_modules=None):
 	回傳值:
 		WatcherEngine 物件
 	"""
-
 	if (enabled_modules is None):
 		enabled_modules = get_builtin_modules()
 
@@ -377,16 +383,16 @@ def _prepare_log(config_filepath):
 	syslog.openlog(logging_name, syslog.LOG_PID|syslog.LOG_PERROR, syslog.LOG_DAEMON)
 # ### def _prepare_log
 
-__arrived_signal_handled = False	# 已收到的訊號是否已經處理完成
-__terminate_signal_recived = False	# 收到程式停止訊號
+_arrived_signal_handled = False	# 已收到的訊號是否已經處理完成
+_terminate_signal_recived = False	# 收到程式停止訊號
 
 def _termination_signal_handler(signum, frame):
-	""" (私有函數) UNIX Signal 處理器 """
+	""" (私有函數) UNIX Signal 處理器
+	"""
+	global _terminate_signal_recived, _arrived_signal_handled
 
-	global __terminate_signal_recived, __arrived_signal_handled
-
-	__terminate_signal_recived = True
-	__arrived_signal_handled = True
+	_terminate_signal_recived = True
+	_arrived_signal_handled = True
 
 	print "Recived Stop Signal."
 # ### def _term_signal_handler
@@ -397,10 +403,10 @@ def _regist_terminate_signal():
 # ### def _regist_terminate_signal
 
 def _check_terminate_signal():
-	global __terminate_signal_recived, __arrived_signal_handled
+	global _terminate_signal_recived, _arrived_signal_handled
 
-	if True == __terminate_signal_recived:
-		while (False == __arrived_signal_handled):
+	if True == _terminate_signal_recived:
+		while (False == _arrived_signal_handled):
 			time.sleep(1)
 		return True
 	else:
@@ -408,14 +414,14 @@ def _check_terminate_signal():
 # ### def _check_terminate_signal
 
 def _wait_terminate_signal():
-	global __terminate_signal_recived, __arrived_signal_handled
+	global _terminate_signal_recived, _arrived_signal_handled
 
 	# {{{ loop for signal handling
-	while (False == __terminate_signal_recived):
-		__arrived_signal_handled = False
+	while (False == _terminate_signal_recived):
+		_arrived_signal_handled = False
 		signal.pause()
 
-		while (False == __arrived_signal_handled):
+		while (False == _arrived_signal_handled):
 			time.sleep(1)
 	# }}} loop for signal handling
 # ### def _wait_terminate_signal
@@ -429,7 +435,6 @@ def run_watcher(config_filepath, enabled_modules=None):
 		config_filepath - 設定檔路徑
 		enabled_modules=None - 要啓用的模組串列
 	"""
-
 	_prepare_log(config_filepath)
 	w_engine = get_watcherengine(config_filepath, enabled_modules)
 	if w_engine is None:

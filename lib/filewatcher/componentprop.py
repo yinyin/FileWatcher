@@ -1,8 +1,9 @@
+
 # -*- coding: utf-8 -*-
 
 """ 各種元件屬性值物件 """
 
-class ModuleProp:
+class ModuleProp(object):
 	""" 模組屬性，所有工作模組屬性的父類別 """
 
 	def __init__(self, module_name, isMonitor=False, isOperator=False):
@@ -13,6 +14,7 @@ class ModuleProp:
 			isMonitor - 是否為監視器模組 (True/False)
 			isOperator - 是否為操作器模組 (True/False)
 		"""
+		super(ModuleProp, self).__init__()
 
 		self.module_name = module_name
 
@@ -30,8 +32,7 @@ class MonitorProp(ModuleProp):
 		參數:
 			module_name - 模組名稱 (讀取設定檔時會依此分派)
 		"""
-
-		ModuleProp.__init__(self, module_name, isMonitor=True)
+		super(MonitorProp, self).__init__(module_name, isMonitor=True)
 	# ### def __init__
 # ### class OperatorProp
 
@@ -48,8 +49,7 @@ class OperatorProp(ModuleProp):
 			run_priority - 執行優先順序，數字小的先執行
 			handle_dismiss - 處理檔案刪除移出事件
 		"""
-
-		ModuleProp.__init__(self, module_name, isOperator=True)
+		super(OperatorProp, self).__init__(module_name, isOperator=True)
 
 		self.operation_name = operation_name
 		self.schedule_priority = schedule_priority
