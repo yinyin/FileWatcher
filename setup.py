@@ -5,9 +5,8 @@
 from distutils.core import setup
 
 
-
 setup(name='FileWatcher',
-		version='1.00',
+		version='1.2.0',
 		description='File watching framework',
 		packages=['filewatcher', 'filewatcher.monitor', 'filewatcher.operator', ],
 		package_dir={'': 'lib'},
