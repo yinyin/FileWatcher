@@ -342,12 +342,13 @@ def get_builtin_modules():
 
 
 
-def get_watcherengine(config_filepath, enabled_modules=None):
+def get_watcherengine(config_filepath, enabled_modules=None, config_load_callable=None):
 	""" 取得監看引擎
 
 	參數:
 		config_filepath - 設定檔路徑
 		enabled_modules=None - 要啓用的模組串列
+		config_load_callable=None - 設定讀取模組
 	回傳值:
 		WatcherEngine 物件
 	"""
@@ -359,7 +360,9 @@ def get_watcherengine(config_filepath, enabled_modules=None):
 	syslog.syslog(syslog.LOG_INFO, "loaded modules: modify=%r, dismiss=%r" % (operation_run_newupdate_seq, operation_run_dismiss_seq,))
 
 	# load config
-	cfg = filewatchconfig.load_config(config_filepath, config_readers, operation_deliver, operation_schedule_seq, operation_run_newupdate_seq, operation_run_dismiss_seq)
+	if config_load_callable is None:
+		config_load_callable = filewatchconfig.load_config
+	cfg = config_load_callable(config_filepath, config_readers, operation_deliver, operation_schedule_seq, operation_run_newupdate_seq, operation_run_dismiss_seq)
 	if cfg is None:
 		syslog.syslog(syslog.LOG_ERR, "cannot load global configuration.")
 		return None
@@ -427,16 +430,17 @@ def _wait_terminate_signal():
 # ### def _wait_terminate_signal
 
 
-def run_watcher(config_filepath, enabled_modules=None):
+def run_watcher(config_filepath, enabled_modules=None, config_load_callable=None):
 	""" 啟動 watcher
 	執行前應先對 filewatchconfig 模組註冊好 ignorance checker
 
 	參數:
 		config_filepath - 設定檔路徑
 		enabled_modules=None - 要啓用的模組串列
+		config_load_callable=None - 設定讀取模組
 	"""
 	_prepare_log(config_filepath)
-	w_engine = get_watcherengine(config_filepath, enabled_modules)
+	w_engine = get_watcherengine(config_filepath, enabled_modules, config_load_callable)
 	if w_engine is None:
 		print "ERR: cannot load watcher engine."
 		return
